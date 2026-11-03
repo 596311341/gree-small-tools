@@ -1,0 +1,1 @@
+# No obfuscation or shrinking is enabled for this WebView app.

@@ -1,0 +1,2944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2efe3">
+<meta name="description" content="格力小工具护眼主题：低蓝光米绿底色，保留感温包检测、四冷媒饱和参数、R410A 高低压传感器互查全部功能。">
+<title>格力小工具 · 护眼主题</title>
+<style>
+:root{
+  --bg:#070a0f; --panel:#0f161f; --panel2:#0a1017;
+  --line:rgba(148,180,208,.15); --line2:rgba(148,180,208,.09);
+  --text:#e9f1f8; --muted:#8ba0b5; --dim:#5f7285;
+  --accent:#25e0c0; --blue:#5b9dff; --amber:#ffb454; --red:#ff6b6b;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14.5px;line-height:1.5;overflow:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(120% 55% at 50% -8%,rgba(37,224,192,.10),transparent 62%),
+             radial-gradient(70% 45% at 100% 0%,rgba(91,157,255,.09),transparent 60%);}
+[hidden]{display:none!important}
+.app{position:relative;z-index:1;height:100vh;height:100dvh;display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"top" "main" "nav";margin:0 auto;max-width:100%}
+
+/* ---------- topbar ---------- */
+.topbar{grid-area:top;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px 6px}
+.brandchip{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.02em}
+.brandchip b{font-weight:600}
+.brandchip .led{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(37,224,192,.9)}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);
+  font-family:var(--mono);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.icon-btn:active{background:rgba(255,255,255,.09)}
+.icon-btn .ib-label{display:none}
+
+/* ---------- nav ---------- */
+.side{grid-area:nav;display:flex;align-items:stretch;border-top:1px solid var(--line);
+  background:rgba(8,12,17,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  padding:5px 6px calc(5px + env(safe-area-inset-bottom))}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;flex:1;min-width:0}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 2px;
+  border:0;background:none;color:var(--dim);font-family:inherit;font-size:10.5px;border-radius:12px;cursor:pointer;
+  transition:color .18s,background .18s}
+.tab svg{width:21px;height:21px;display:block}
+.tab.active{color:var(--accent);background:rgba(37,224,192,.10)}
+.side-brand{display:none}
+.side-foot{display:none}
+
+/* ---------- main ---------- */
+main{grid-area:main;overflow-y:auto;overflow-x:hidden;padding:4px 16px 26px;scrollbar-width:thin;
+  scrollbar-color:rgba(148,180,208,.25) transparent;-webkit-overflow-scrolling:touch}
+main::-webkit-scrollbar{width:5px}
+main::-webkit-scrollbar-thumb{background:rgba(148,180,208,.22);border-radius:9px}
+.view{display:none;animation:fade .22s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.view{animation:none}}
+
+.view-head{margin:4px 2px 13px}
+.view-head h2{margin:0 0 3px;font-size:20px;font-weight:600;letter-spacing:.01em}
+.view-head p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5}
+
+.card{background:linear-gradient(180deg,#111a24,#0b1118);border:1px solid var(--line);border-radius:18px;
+  padding:15px;margin-bottom:12px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
+.card-head .eyebrow{white-space:nowrap;flex:none}
+.card-head .muted{flex:1;min-width:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eyebrow{font-size:11px;letter-spacing:.1em;color:var(--muted)}
+.mt14{margin-top:14px}
+.mt16{margin-top:16px}
+.muted{color:var(--muted);font-size:12px}
+
+/* segmented */
+.seg{display:flex;gap:4px;background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;padding:3px;margin-top:9px}
+.seg-btn{flex:1;min-width:0;border:0;background:none;color:var(--muted);font-family:inherit;font-size:13px;
+  padding:9px 3px;border-radius:9px;cursor:pointer;transition:.18s;white-space:nowrap}
+.seg-btn.active{background:rgba(37,224,192,.14);color:#a5f6e6;box-shadow:inset 0 0 0 1px rgba(37,224,192,.24)}
+.seg-btn:active{transform:scale(.985)}
+.spec-meta{margin-top:9px;font-size:11.5px;color:var(--dim);font-family:var(--mono);letter-spacing:.01em}
+
+/* inputs */
+.field-label{display:flex;align-items:baseline;gap:6px;justify-content:space-between;margin:16px 2px 0;font-size:12px;color:var(--muted)}
+.field-label .opt{font-size:10.5px;color:var(--dim)}
+.input-row{display:flex;align-items:baseline;gap:10px;background:#060a10;border:1px solid var(--line);
+  border-radius:14px;padding:9px 14px;margin-top:7px;transition:border-color .2s,box-shadow .2s}
+.input-row:focus-within{border-color:rgba(37,224,192,.45);box-shadow:0 0 0 3px rgba(37,224,192,.07)}
+.input-row input{flex:1;min-width:0;width:100%;border:0;background:none;color:var(--text);font-family:var(--mono);
+  font-size:29px;font-weight:500;outline:none;letter-spacing:-.01em;padding:0;font-variant-numeric:tabular-nums}
+.input-row input::placeholder{color:#37485a}
+.input-row .unit{font-family:var(--mono);font-size:13px;color:var(--muted);flex:none}
+.sign-btn{flex:none;align-self:center;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);
+  background:rgba(255,255,255,.04);color:var(--muted);font-family:var(--mono);font-size:15px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.sign-btn:active{background:rgba(37,224,192,.12);color:var(--accent)}
+.input-row.small{padding:7px 13px;margin-top:6px}
+.input-row.small input{font-size:17px}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.hint{margin-top:8px;font-size:11.5px;color:var(--dim);min-height:16px}
+.hint-row{display:flex;align-items:center;gap:8px;margin-top:8px;min-height:18px}
+.hint-row .hint{margin:0;flex:1;min-width:0}
+.field-chip{flex:none;border:1px solid rgba(37,224,192,.28);background:rgba(37,224,192,.1);color:#a5f6e6;
+  font-family:inherit;font-size:11px;line-height:1.4;padding:4px 9px;border-radius:999px;cursor:pointer}
+.field-chip:active{transform:scale(.97)}
+@keyframes fieldFlash{0%{box-shadow:0 0 0 0 rgba(37,224,192,.42)}70%{box-shadow:0 0 0 7px rgba(37,224,192,0)}100%{box-shadow:0 0 0 0 rgba(37,224,192,0)}}
+.flash{animation:fieldFlash 1.2s ease}
+@media(prefers-reduced-motion:reduce){.flash{animation:none}}
+
+/* result */
+.result{position:relative;overflow:hidden}
+.result::after{content:"";position:absolute;right:-60px;top:-70px;width:170px;height:170px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,224,192,.11),transparent 70%);pointer-events:none}
+.hero{padding:2px 2px 0}
+.hero-kicker{font-size:11.5px;color:var(--muted);letter-spacing:.08em}
+.hero-num{font-family:var(--mono);font-size:46px;line-height:1.08;font-weight:600;letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;margin-top:2px}
+.hero-num .u{font-size:16px;font-weight:500;color:var(--muted);margin-left:5px;letter-spacing:0}
+.badge{display:inline-flex;align-items:center;gap:6px;margin-top:9px;font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line)}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.good{color:#7df0d6;border-color:rgba(37,224,192,.32);background:rgba(37,224,192,.09)}
+.badge.warn{color:#ffc978;border-color:rgba(255,180,84,.32);background:rgba(255,180,84,.09)}
+.badge.bad{color:#ff9d9d;border-color:rgba(255,107,107,.32);background:rgba(255,107,107,.09)}
+.badge.info{color:#a4c4ff;border-color:rgba(91,157,255,.32);background:rgba(91,157,255,.09)}
+
+.rangebar{position:relative;height:5px;border-radius:999px;margin:24px 2px 26px;
+  background:linear-gradient(90deg,rgba(91,157,255,.35),rgba(37,224,192,.35),rgba(255,180,84,.35))}
+.rangebar .mark{position:absolute;top:50%;width:11px;height:11px;margin-left:-5.5px;transform:translateY(-50%);
+  border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(37,224,192,.28),0 0 12px rgba(37,224,192,.5)}
+.rangebar .cap{position:absolute;top:11px;font-size:10px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+.rangebar .cap.l{left:0}
+.rangebar .cap.r{right:0}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
+.stats>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.stats span{font-size:10.5px;color:var(--muted)}
+.stats b{font-family:var(--mono);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats i{font-style:normal;font-size:10px;color:var(--dim);margin-left:1px}
+
+.verdict{margin-top:14px;padding:11px 12px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.026)}
+.verdict .vt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:3px}
+.verdict p{margin:0;font-size:12px;color:var(--muted);line-height:1.55}
+.verdict.good .vt{color:#7df0d6}
+.verdict.warn .vt{color:#ffc978}
+.verdict.bad .vt{color:#ff9d9d}
+.verdict.info .vt{color:#a4c4ff}
+
+.result-actions{display:flex;gap:8px;margin-top:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:44px;border-radius:12px;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font-family:inherit;font-size:14px;
+  cursor:pointer;transition:.16s;padding:0 12px}
+.btn.primary{background:rgba(37,224,192,.13);border-color:rgba(37,224,192,.28);color:#a5f6e6}
+.btn:active{transform:scale(.985)}
+.btn[disabled]{opacity:.42;cursor:not-allowed}
+.btn.ghost{background:rgba(255,255,255,.02);color:var(--muted);width:auto;flex:none;padding:0 16px}
+
+.empty{padding:26px 6px 22px;text-align:center}
+.empty-ring{width:56px;height:56px;margin:0 auto 12px;border-radius:50%;border:1px dashed rgba(148,180,208,.3);
+  display:flex;align-items:center;justify-content:center;color:var(--dim);font-family:var(--mono);font-size:17px}
+.empty p{margin:0 0 4px;font-size:13.5px;color:var(--muted)}
+.empty small{font-size:11.5px;color:var(--dim)}
+
+/* cross-spec */
+.cross-table{margin-top:8px}
+.cross-table td:first-child{font-family:inherit;color:var(--muted)}
+.cross-table tr.on td{color:var(--text)}
+.cross-table tr.on td:first-child{color:var(--accent)}
+.cross-table tr.on{background:rgba(37,224,192,.055)}
+.cross-table td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.cross-table th:last-child{text-align:right}
+.cross-table .tag{display:inline-block;margin-left:6px;font-size:9.5px;padding:1px 5px;border-radius:4px;
+  border:1px solid rgba(37,224,192,.3);color:var(--accent);vertical-align:1px}
+
+/* chart */
+.chart-wrap{position:relative;margin:10px -4px 0}
+.chart{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
+.chart text{font-family:var(--mono);fill:var(--dim);font-size:8.5px}
+.chart .axis{stroke:rgba(148,180,208,.22);stroke-width:1}
+.chart .grid{stroke:rgba(148,180,208,.08);stroke-width:1}
+.chart .series{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chart .marker{stroke:#061019;stroke-width:1.6}
+.chart-tip{position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:none;
+  background:rgba(6,11,17,.94);border:1px solid rgba(148,180,208,.25);border-radius:10px;padding:7px 9px;
+  font-family:var(--mono);font-size:10.5px;line-height:1.65;white-space:nowrap;z-index:3;
+  box-shadow:0 8px 22px rgba(0,0,0,.5);min-width:92px}
+.chart-tip .tt{color:var(--text);font-size:11px;margin-bottom:2px}
+.chart-tip .row{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.chart-tip .row i{width:6px;height:6px;border-radius:50%;flex:none}
+.chart-tip .row b{color:var(--text);font-weight:500;margin-left:auto;padding-left:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;padding:0 2px}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.legend i{width:7px;height:7px;border-radius:50%}
+.chart-note{margin-top:9px;font-size:10.5px;color:var(--dim);line-height:1.55}
+
+/* table */
+.table-wrap{margin-top:6px;max-height:330px;overflow:auto;scrollbar-width:thin}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:#0e151d;text-align:left;font-weight:500;color:var(--muted);font-size:10.5px;
+  padding:7px 6px;border-bottom:1px solid var(--line);z-index:1}
+td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.045);font-family:var(--mono);font-size:12px;
+  font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+
+/* records */
+.rec-list{display:flex;flex-direction:column}
+.rec{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid var(--line2)}
+.rec:last-child{border-bottom:0}
+.rec-badge{flex:none;font-family:var(--mono);font-size:10.5px;padding:3px 7px;border-radius:6px;
+  border:1px solid rgba(148,180,208,.22);color:var(--muted)}
+.rec-main{flex:1;min-width:0}
+.rec-main .r1{font-family:var(--mono);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-main .r1 em{font-style:normal;color:var(--muted);font-size:11px;margin:0 3px}
+.rec-main .r2{font-size:10.5px;color:var(--dim);margin-top:2px}
+.rec-del{flex:none;width:32px;height:32px;border-radius:9px;border:1px solid transparent;background:none;
+  color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rec-del:active{background:rgba(255,107,107,.1);color:#ff9d9d}
+.rec-empty{text-align:center;padding:34px 10px;color:var(--dim);font-size:12.5px;line-height:1.7}
+.rec-empty b{display:block;color:var(--muted);font-size:13px;font-weight:500;margin-bottom:4px}
+
+/* details */
+details.card{padding:0;overflow:hidden}
+details.card>summary{list-style:none;cursor:pointer;padding:15px;font-size:13.5px;display:flex;align-items:center;justify-content:space-between}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary .chev{color:var(--dim);transition:transform .2s}
+details.card[open] summary .chev{transform:rotate(180deg)}
+.details-body{padding:0 15px 15px}
+.hc-row{display:flex;gap:9px}
+.hc-row .fld{flex:1;min-width:0}
+.hc-row .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+.hc-row .input-row{margin-top:0;padding:7px 11px}
+.hc-row .input-row input{font-size:16px}
+.hc-out{margin-top:11px;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid var(--line2);
+  font-size:12px;color:var(--muted);line-height:1.6}
+.hc-out b{font-family:var(--mono);color:var(--text);font-size:13px}
+
+/* sheet */
+.sheet-backdrop{position:fixed;inset:0;z-index:50;background:rgba(3,6,10,.72);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-end;justify-content:center;padding:0}
+.sheet{width:100%;max-width:560px;max-height:88dvh;overflow-y:auto;background:#0d141c;border:1px solid var(--line);
+  border-bottom:0;border-radius:22px 22px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));
+  animation:up .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(28px);opacity:.4}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sheet-grip{width:36px;height:4px;border-radius:99px;background:rgba(148,180,208,.28);margin:0 auto 14px}
+.sheet h3{margin:0 0 12px;font-size:17px;font-weight:600}
+.sheet h4{margin:16px 0 5px;font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.04em}
+.sheet p{margin:0 0 7px;font-size:12.5px;color:var(--muted);line-height:1.65}
+.sheet p b{color:var(--text);font-weight:500}
+.sheet ul{margin:0 0 6px;padding-left:17px;font-size:12.5px;color:var(--muted);line-height:1.7}
+.sheet .formula{font-family:var(--mono);font-size:12px;color:var(--text);background:rgba(37,224,192,.07);
+  border:1px solid rgba(37,224,192,.18);border-radius:9px;padding:8px 11px;margin:8px 0}
+.sheet .btn{margin-top:14px}
+/* developer card */
+.dev-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:2px}
+.dev-row{display:flex;align-items:baseline;gap:12px;font-size:12.5px;line-height:1.9;color:var(--muted)}
+.dev-row .dev-label{width:52px;flex:none;color:var(--dim)}
+.dev-row b{color:var(--text);font-weight:600}
+.dev-row a{color:var(--accent);text-decoration:none;word-break:break-all}
+.dev-qr-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px;padding-top:12px;border-top:1px solid var(--line2)}
+.dev-qr{width:150px;height:150px;flex:none;display:block;background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 14px -8px rgba(50,66,58,.45)}
+.dev-qr-text{flex:1;min-width:140px;font-size:12px;line-height:1.7;color:var(--muted)}
+.dev-qr-text b{display:block;color:var(--text);font-size:13px;margin-bottom:2px}
+.dev-note{margin-top:10px;font-size:11px;line-height:1.6;color:var(--dim)}
+
+@media(min-width:760px){.sheet-backdrop{align-items:center;padding:20px}.sheet{border-radius:20px;border-bottom:1px solid var(--line)}}
+
+/* ---------- environment ---------- */
+.env-hero{position:relative;overflow:hidden}
+.env-hero::after{content:"";position:absolute;right:-70px;top:-80px;width:190px;height:190px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,224,192,.12),transparent 70%);pointer-events:none}
+.env-top{display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;z-index:1}
+.env-status{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);min-width:0}
+.env-status .led{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;box-shadow:0 0 8px rgba(37,224,192,.8)}
+.env-status .led.warn{background:var(--amber);box-shadow:0 0 8px rgba(255,180,84,.7)}
+.env-status .led.pulse{animation:envPulse 1.4s ease-in-out infinite}
+@keyframes envPulse{0%,100%{opacity:.3}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.env-status .led.pulse{animation:none}}
+.env-place{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text);min-width:0}
+.env-place svg{width:14px;height:14px;flex:none;color:var(--accent)}
+.env-place .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.env-badge{font-size:10px;padding:2px 7px;border-radius:999px;border:1px solid rgba(37,224,192,.3);
+  color:var(--accent);background:rgba(37,224,192,.08);flex:none;line-height:1.5}
+.env-badge.manual{color:var(--amber);border-color:rgba(255,180,84,.3);background:rgba(255,180,84,.08)}
+.env-title{margin:12px 0 0;font-size:17px;font-weight:600}
+.env-lead{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.env-actions{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1}
+.env-actions .btn{min-height:42px;font-size:13.5px}
+.env-main{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:10px;position:relative;z-index:1}
+.env-temp{font-family:var(--mono);font-size:54px;line-height:.95;font-weight:600;letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.env-temp .u{font-size:18px;font-weight:500;color:var(--muted);margin-left:4px;letter-spacing:0}
+.env-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-bottom:4px;min-width:0}
+.env-icon{width:30px;height:30px;color:var(--accent);opacity:.95}
+.env-icon svg{width:100%;height:100%;display:block}
+.env-cond{font-size:11.5px;color:var(--muted);text-align:right;line-height:1.45}
+.env-cond b{display:block;color:var(--text);font-weight:500;font-size:12.5px}
+.env-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)}
+.env-stats div{min-width:0}
+.env-stats span{display:block;font-size:10px;color:var(--muted);margin-bottom:2px}
+.env-stats b{display:block;font-family:var(--mono);font-size:12.5px;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.env-warn{margin-top:12px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,180,84,.28);
+  background:rgba(255,180,84,.08);font-size:11.5px;color:#ffc978;line-height:1.5}
+.env-foot{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10.5px;color:var(--dim);flex-wrap:wrap}
+.env-foot .env-src{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.env-link{border:0;background:none;color:var(--accent);font-size:11.5px;padding:4px 2px;cursor:pointer;
+  font-family:inherit;min-height:30px;flex:none}
+.env-grid .card{margin-bottom:12px}
+.env-table-wrap{max-height:none;overflow-x:auto;overflow-y:visible}
+.env-table-wrap th,.env-table-wrap td{padding:8px 4px}
+.env-table-wrap th:first-child,.env-table-wrap td:first-child{width:52px}
+.env-table-wrap td:first-child{font-family:var(--inherit);color:var(--muted)}
+.env-table-wrap tr.on td{background:rgba(37,224,192,.07)}
+.env-table-wrap tr.on td:first-child{color:var(--accent)}
+.env-table-wrap tr[data-env-ref]{cursor:pointer}
+.env-table-wrap tr[data-env-ref]:active td{background:rgba(37,224,192,.12)}
+.env-cell-empty{color:var(--dim);text-align:center;padding:18px 4px!important;font-family:inherit}
+.env-tip{margin-top:9px;font-size:10.5px;color:var(--dim);line-height:1.55}
+.env-cta{margin-top:12px;min-height:42px;font-size:13px}
+.env-note{margin:8px 0 0;font-size:12px;color:var(--muted);line-height:1.65}
+.env-note b{color:var(--text);font-weight:500}
+.env-field{margin-top:12px}
+.env-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+.env-input-row{display:flex;gap:8px}
+.env-input-row input{flex:1;min-width:0;background:#060a10;border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:15px;outline:none;font-variant-numeric:tabular-nums}
+.env-input-row input::placeholder{color:#37485a;font-family:var(--font);font-size:13px}
+.env-input-row input:focus{border-color:rgba(37,224,192,.45);box-shadow:0 0 0 3px rgba(37,224,192,.07)}
+.env-inline-btn{width:auto;flex:none;min-height:42px;padding:0 15px;font-size:13px}
+
+/* ---------- pressure sensor ---------- */
+.sensor-grid .col{min-width:0}
+.stats.four{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 10px}
+.sen-bar{margin:22px 2px 26px}
+.sen-switch{display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;margin-top:10px;
+  border-radius:11px;border:1px solid rgba(37,224,192,.26);background:rgba(37,224,192,.1);color:#a5f6e6;
+  font-family:inherit;font-size:13px;cursor:pointer}
+.sen-switch:active{background:rgba(37,224,192,.16)}
+.sen-jump{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin-top:12px;
+  padding:10px 12px;border-radius:11px;border:1px solid rgba(37,224,192,.24);background:rgba(37,224,192,.08);
+  color:#a5f6e6;font-family:inherit;font-size:12.5px;text-align:left;cursor:pointer;min-height:40px}
+.sen-jump:active{background:rgba(37,224,192,.15)}
+.sen-jump .arw{flex:none;color:var(--accent);font-family:var(--mono)}
+.env-sen-link{width:100%;margin-top:10px;min-height:40px;font-size:12.5px}
+@media(min-width:900px){
+  .sensor-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);gap:14px;align-items:start}
+  .sensor-grid .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .sensor-grid .card{margin-bottom:0}
+}
+
+/* ---------- desktop ---------- */
+@media(min-width:900px){
+  .app{max-width:1260px;grid-template-columns:236px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"side top" "side main"}
+  .side{grid-area:side;flex-direction:column;border-top:0;border-right:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(17,25,35,.92),rgba(8,12,18,.92));padding:22px 14px}
+  .side-brand{display:flex;align-items:center;gap:10px;padding:2px 8px 22px}
+  .side-brand .mark{width:34px;height:34px;border-radius:11px;background:rgba(37,224,192,.12);
+    border:1px solid rgba(37,224,192,.25);display:flex;align-items:center;justify-content:center;flex:none}
+  .side-brand b{display:block;font-size:14px;font-weight:600;line-height:1.3}
+  .side-brand span{display:block;font-size:10.5px;color:var(--dim);font-family:var(--mono)}
+  .tabs{display:flex;flex-direction:column;gap:5px}
+  .tab{flex-direction:row;justify-content:flex-start;gap:11px;padding:11px 12px;font-size:13.5px;border-radius:11px}
+  .tab svg{width:19px;height:19px}
+  .side-foot{display:block;margin-top:auto;padding:14px 8px 0;border-top:1px solid var(--line2);
+    font-size:10.5px;color:var(--dim);line-height:1.65}
+  .topbar{padding:22px 28px 8px;justify-content:flex-end}
+  .icon-btn{width:auto;height:34px;border-radius:999px;padding:0 14px;gap:7px;font-family:inherit;font-size:12px}
+  .icon-btn .ib-label{display:inline}
+  .brandchip{display:none}
+  main{padding:4px 28px 44px}
+  .diag-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:14px;align-items:start}
+  .diag-grid .card{margin-bottom:0}
+  .diag-grid .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .view-head h2{font-size:22px}
+  .two-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px;align-items:start}
+  .two-col .card{margin-bottom:0}
+  .env-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.04fr);gap:14px;align-items:start}
+  .env-grid .card{margin-bottom:0}
+  .hero-num{font-size:50px}
+  .table-wrap{max-height:420px}
+}
+@media(max-width:360px){
+  .hero-num{font-size:40px}
+  .stats b{font-size:13px}
+  main{padding-left:12px;padding-right:12px}
+}
+/* ---- refrigerant additions ---- */
+.ref-seg .seg-btn{font-size:12px;padding:9px 2px}
+.cmp{display:flex;flex-direction:column;margin-top:4px}
+.cmp-row{display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid var(--line2);border-radius:8px}
+.cmp-row:last-child{border-bottom:0}
+.cmp-row.on{background:rgba(37,224,192,.06)}
+.cmp-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.cmp-name{font-family:var(--mono);font-size:12px;width:48px;flex:none;color:var(--muted)}
+.cmp-row.on .cmp-name{color:var(--text)}
+.cmp-sub{flex:1;min-width:0;font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-val{font-family:var(--mono);font-size:13px;flex:none;text-align:right;font-variant-numeric:tabular-nums}
+.cmp-val i{font-style:normal;font-size:9.5px;color:var(--dim);margin-left:1px}
+.cmp-val.out{color:#ffc978;font-size:11.5px}
+.table-wrap.tall{max-height:360px}
+tbody tr.on td{background:rgba(37,224,192,.075);color:var(--text)}
+tbody tr.on td:first-child{color:var(--accent)}
+</style>
+<style id="eyecare-theme">
+:root{  --bg:#f2efe3;--panel:#fffdf6;--panel2:#f7f3e7;  --line:rgba(84,96,88,.16);--line2:rgba(84,96,88,.10);  --text:#26332c;--muted:#5f6f68;--dim:#8b9992;  --accent:#0d8f7a;--blue:#2b6cb0;--amber:#a8690f;--red:#b94242;}html,body{background:#f2efe3!important;color:#26332c!important}body::before{background:radial-gradient(120% 55% at 50% -8%,rgba(13,143,122,.10),transparent 62%),radial-gradient(70% 45% at 100% 0%,rgba(43,108,176,.07),transparent 60%)!important}.card{background:linear-gradient(180deg,#fffdf6,#f9f5ea)!important;border-color:rgba(84,96,88,.14)!important;box-shadow:0 1px 2px rgba(60,72,64,.05),0 10px 24px -18px rgba(60,72,64,.45)!important}.side{background:rgba(250,247,238,.96)!important;border-color:rgba(84,96,88,.14)!important}.icon-btn{background:#fffdf6!important;border-color:rgba(84,96,88,.18)!important;color:#5f6f68!important}.icon-btn:active{background:rgba(84,96,88,.09)!important}.brandchip .led,.env-status .led{box-shadow:none!important}.tab{color:#8b9992}.tab.active{color:#0b7a68!important;background:rgba(13,143,122,.12)!important}.seg{background:rgba(84,96,88,.05)!important;border-color:rgba(84,96,88,.14)!important}.seg-btn{color:#5f6f68}.seg-btn.active{background:rgba(13,143,122,.14)!important;color:#0b6f5f!important;box-shadow:inset 0 0 0 1px rgba(13,143,122,.28)!important}.btn{background:rgba(84,96,88,.055)!important;border-color:rgba(84,96,88,.18)!important;color:#26332c!important}.btn.primary{background:rgba(13,143,122,.12)!important;border-color:rgba(13,143,122,.3)!important;color:#0b6f5f!important}.btn.ghost{background:rgba(84,96,88,.03)!important}.input-row{background:#fffdf8!important;border-color:rgba(84,96,88,.2)!important}.input-row:focus-within{border-color:rgba(13,143,122,.5)!important;box-shadow:0 0 0 3px rgba(13,143,122,.09)!important}.input-row input{color:#26332c!important}.input-row input::placeholder{color:#a9b3ac!important}.sign-btn{background:#fffdf8!important;border-color:rgba(84,96,88,.2)!important;color:#5f6f68!important}.field-chip{background:rgba(13,143,122,.1)!important;border-color:rgba(13,143,122,.3)!important;color:#0b6f5f!important}.env-input-row input{background:#fffdf8!important;border-color:rgba(84,96,88,.2)!important;color:#26332c!important}.env-input-row input::placeholder{color:#a9b3ac!important}.env-input-row input:focus{border-color:rgba(13,143,122,.5)!important;box-shadow:0 0 0 3px rgba(13,143,122,.09)!important}.badge.good,.verdict.good .vt{color:#0b6f5f!important}.badge.good{border-color:rgba(13,143,122,.3)!important;background:rgba(13,143,122,.1)!important}.badge.warn,.verdict.warn .vt{color:#8a5a0e!important}.badge.warn{border-color:rgba(168,105,15,.3)!important;background:rgba(214,160,60,.14)!important}.badge.bad,.verdict.bad .vt{color:#a23b3b!important}.badge.bad{border-color:rgba(185,66,66,.3)!important;background:rgba(185,66,66,.1)!important}.badge.info,.verdict.info .vt{color:#2b5c9e!important}.badge.info{border-color:rgba(43,108,176,.3)!important;background:rgba(43,108,176,.09)!important}.verdict{background:rgba(84,96,88,.045)!important;border-color:rgba(84,96,88,.12)!important}.hc-out{background:rgba(84,96,88,.05)!important;border-color:rgba(84,96,88,.12)!important}.rangebar{background:linear-gradient(90deg,rgba(43,108,176,.32),rgba(13,143,122,.34),rgba(168,105,15,.32))!important}.rangebar .mark{background:#fff!important;box-shadow:0 0 0 3px rgba(13,143,122,.22),0 0 10px rgba(13,143,122,.38)!important}.chart .axis{stroke:rgba(84,96,88,.28)!important}.chart .grid{stroke:rgba(84,96,88,.10)!important}.chart .marker{stroke:#fffdf6!important}.chart-tip{background:rgba(255,253,246,.97)!important;border-color:rgba(84,96,88,.2)!important;box-shadow:0 10px 24px -12px rgba(50,66,58,.45)!important}.chart-tip .tt,.chart-tip .row b{color:#26332c!important}.chart-tip .row{color:#5f6f68!important}.result::after,.env-hero::after{background:radial-gradient(circle,rgba(13,143,122,.10),transparent 70%)!important}th{background:#f1ecdc!important;color:#5f6f68!important;border-bottom-color:rgba(84,96,88,.18)!important}td{border-bottom-color:rgba(84,96,88,.09)!important}tbody tr.on td,.env-table-wrap tr.on td{background:rgba(13,143,122,.09)!important}tbody tr.on td:first-child,.env-table-wrap tr.on td:first-child{color:#0b6f5f!important}.cross-table tr.on{background:rgba(13,143,122,.07)!important}.env-table-wrap tr[data-env-ref]:active td{background:rgba(13,143,122,.14)!important}.env-badge{color:#0b6f5f!important;border-color:rgba(13,143,122,.3)!important;background:rgba(13,143,122,.1)!important}.env-badge.manual{color:#8a5a0e!important;border-color:rgba(168,105,15,.3)!important;background:rgba(214,160,60,.14)!important}.env-warn{color:#8a5a0e!important;border-color:rgba(168,105,15,.3)!important;background:rgba(214,160,60,.13)!important}.env-link{color:#0b6f5f!important}.sen-switch,.sen-jump{color:#0b6f5f!important;border-color:rgba(13,143,122,.3)!important;background:rgba(13,143,122,.1)!important}.sen-switch:active,.sen-jump:active{background:rgba(13,143,122,.17)!important}.cmp-row.on{background:rgba(13,143,122,.08)!important}.cmp-val.out{color:#8a5a0e!important}.rec-badge{border-color:rgba(84,96,88,.22)!important}.rec-del:active{background:rgba(185,66,66,.1)!important;color:#a23b3b!important}.empty-ring{border-color:rgba(84,96,88,.26)!important}.sheet-backdrop{background:rgba(38,51,44,.36)!important}.sheet{background:#fffdf6!important;border-color:rgba(84,96,88,.16)!important}.sheet .formula{background:rgba(13,143,122,.08)!important;border-color:rgba(13,143,122,.2)!important}main::-webkit-scrollbar-thumb{background:rgba(84,96,88,.24)!important}@media(min-width:900px){.side{background:linear-gradient(180deg,#fbf8ef,#f2eee1)!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brandchip"><span class="led"></span><b>格力小工具</b></div>
+    <button class="icon-btn" id="infoBtn" aria-label="数据说明与勘误" title="数据说明"><span aria-hidden="true">?</span><span class="ib-label">数据说明</span></button>
+  </header>
+
+  <aside class="side">
+    <div class="side-brand">
+      <div class="mark">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#25e0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V4.5a2.5 2.5 0 0 0-5 0v10.26a4 4 0 1 0 5 0z"/><path d="M11.5 8v7"/></svg>
+      </div>
+      <div><b>格力小工具</b><span>NTC · 4 冷媒</span></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="功能导航">
+      <button class="tab active" data-tab="diag" role="tab" aria-selected="true" aria-controls="view-diag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V4.5a2.5 2.5 0 0 0-5 0v10.26a4 4 0 1 0 5 0z"/><path d="M11.5 8v7"/></svg>
+        <span>检测</span>
+      </button>
+      <button class="tab" data-tab="env" role="tab" aria-selected="false" aria-controls="view-env">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/></svg>
+        <span>环境</span>
+      </button>
+      <button class="tab" data-tab="curve" role="tab" aria-selected="false" aria-controls="view-curve">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V4"/><path d="M4 19h16"/><path d="M7 15.5l3.2-4.6 3 2.2 4.3-6.1"/></svg>
+        <span>曲线</span>
+      </button>
+      <button class="tab" data-tab="ref" role="tab" aria-selected="false" aria-controls="view-ref">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M3.5 6.5l17 11"/><path d="M20.5 6.5l-17 11"/><path d="M12 5.5l2 1.5M12 5.5L10 7M12 18.5l2-1.5M12 18.5L10 17"/></svg>
+        <span>冷媒</span>
+      </button>
+      <button class="tab" data-tab="sensor" role="tab" aria-selected="false" aria-controls="view-sensor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 12l3.4-3.1"/><circle cx="12" cy="12" r="1.3"/><path d="M12 4.2v1.4M19.8 12h-1.4M12 19.8v-1.4M4.2 12h1.4"/></svg>
+        <span>传感</span>
+      </button>
+      <button class="tab" data-tab="rec" role="tab" aria-selected="false" aria-controls="view-rec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.6" cy="6" r="1.1"/><circle cx="4.6" cy="12" r="1.1"/><circle cx="4.6" cy="18" r="1.1"/></svg>
+        <span>记录</span>
+      </button>
+    </nav>
+    <div class="side-foot">数据源<br>《格力商用空调上门服务手册》<br>第五 ~ 六部分</div>
+  </aside>
+
+  <main data-generated-by="vibe-coding-frontend-design">
+
+    <!-- ================= 检测 ================= -->
+    <section class="view active" id="view-diag" role="tabpanel" aria-labelledby="tab-diag">
+      <div class="view-head">
+        <h2>感温包检测</h2>
+        <p>输入实测电阻或分压电压，反查温度并判断 NTC 是否正常</p>
+      </div>
+
+      <div class="diag-grid">
+        <div class="col">
+          <div class="card">
+            <div class="card-head"><span class="eyebrow">感温包规格</span><span class="muted" id="specRange">-20 ~ 153℃</span></div>
+            <div class="seg" id="specSeg" role="group" aria-label="感温包规格">
+              <button class="seg-btn active" data-spec="15k" aria-pressed="true">15kΩ</button>
+              <button class="seg-btn" data-spec="20k" aria-pressed="false">20kΩ</button>
+              <button class="seg-btn" data-spec="50k" aria-pressed="false">50kΩ</button>
+            </div>
+            <div class="spec-meta" id="specMeta">分压电阻 15 kΩ · 5V 供电 · 174 个温度点</div>
+
+            <div class="card-head mt16"><span class="eyebrow">测量方式</span></div>
+            <div class="seg" id="modeSeg" role="group" aria-label="测量方式">
+              <button class="seg-btn active" data-mode="r" aria-pressed="true">电阻</button>
+              <button class="seg-btn" data-mode="v" aria-pressed="false">分压电压</button>
+              <button class="seg-btn" data-mode="t" aria-pressed="false">温度</button>
+            </div>
+
+            <label class="field-label" for="mainInput"><span id="inputLabel">实测阻值</span></label>
+            <div class="input-row">
+              <button class="sign-btn" id="signBtn" hidden aria-label="切换正负号">±</button>
+              <input id="mainInput" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="inputHint">
+              <span class="unit" id="inputUnit">kΩ</span>
+            </div>
+            <div class="hint" id="inputHint">量程 0.254 ~ 144 kΩ</div>
+
+            <label class="field-label" for="refInput"><span>参考温度</span><span class="opt">可选 · 实测环境温度</span></label>
+            <div class="input-row small">
+              <input id="refInput" type="number" inputmode="decimal" step="any" autocomplete="off" placeholder="—">
+              <span class="unit">℃</span>
+            </div>
+            <div class="hint-row">
+              <span class="hint">填实测环境温度，可判断感温包偏差</span>
+              <button class="field-chip" id="useEnvRef" hidden>取环境温度</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="card result" id="resultCard" aria-live="polite"></div>
+          <div class="card" id="crossCard">
+            <div class="card-head">
+              <span class="eyebrow">三规格对照</span>
+              <span class="muted" id="crossHint">同一读数在其它规格下的含义</span>
+            </div>
+            <table class="cross-table" id="crossTable"><tbody>
+              <tr><td>15kΩ</td><td>—</td></tr>
+              <tr><td>20kΩ</td><td>—</td></tr>
+              <tr><td>50kΩ</td><td>—</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 环境 ================= -->
+    <section class="view" id="view-env" role="tabpanel" aria-labelledby="tab-env">
+      <div class="view-head">
+        <h2>现场环境</h2>
+        <p>授权定位后自动读取当地实时气温，并换算该温度下的感温包与冷媒参数</p>
+      </div>
+
+      <div class="card env-hero" id="envHero" aria-live="polite"></div>
+
+      <div class="card" id="envManualCard" hidden>
+        <div class="card-head">
+          <span class="eyebrow">手动指定</span>
+          <button class="env-link" id="envManualClose">收起</button>
+        </div>
+        <div class="env-field">
+          <label for="cityInput">按城市查气温</label>
+          <div class="env-input-row">
+            <input id="cityInput" type="text" autocomplete="off" placeholder="如 深圳、广州">
+            <button class="btn primary env-inline-btn" id="cityBtn">查询</button>
+          </div>
+        </div>
+        <div class="env-field">
+          <label for="envTempInput">或直接输入当前气温</label>
+          <div class="env-input-row">
+            <input id="envTempInput" type="number" inputmode="decimal" step="any" autocomplete="off" placeholder="如 26.5">
+            <button class="btn primary env-inline-btn" id="envTempBtn">使用</button>
+          </div>
+        </div>
+        <div class="hint" id="envManualHint">没有定位权限时，手动输入同样可以算出全部参数。</div>
+      </div>
+
+      <div class="env-grid">
+        <div class="card">
+          <div class="card-head">
+            <span class="eyebrow">感温包标准值</span>
+            <span class="muted" id="envNtcMeta">—</span>
+          </div>
+          <div class="table-wrap env-table-wrap">
+            <table>
+              <thead><tr><th>规格</th><th class="num">阻值 kΩ</th><th class="num">分压 V</th><th class="num">相对25℃</th></tr></thead>
+              <tbody id="envNtcBody"></tbody>
+            </table>
+          </div>
+          <div class="env-tip" id="envNtcTip">按 5V 供电、对应分压电阻计算，可与实测值逐一比对。</div>
+          <button class="btn primary env-cta" id="envUseRef" disabled>把该温度填入检测页参考温度</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="eyebrow">冷媒饱和参数</span>
+            <span class="muted" id="envRefMeta">—</span>
+          </div>
+          <div class="table-wrap env-table-wrap">
+            <table>
+              <thead><tr><th>冷媒</th><th class="num">表压</th><th class="num">MPa</th><th class="num">绝对</th></tr></thead>
+              <tbody id="envRefBody"></tbody>
+            </table>
+          </div>
+          <div class="env-tip">表压、绝对压力单位 kgf/cm²；MPa 由表压换算。点任一行到冷媒页查看该温度。</div>
+          <button class="btn ghost env-sen-link" id="envSensorBtn" type="button">R410A 平衡压力 → 查传感器输出</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="eyebrow">怎么看这组数</span></div>
+        <p class="env-note">这里的气温是<b>室外环境温度</b>，不是机组蒸发温度或冷凝温度。停机平衡压力接近表中数值，可用来<b>初判系统充注的冷媒种类</b>（R410A 与 R32 接近，R22、R134A 明显偏低）；运行工况仍需实测回气、排气温度与压力。</p>
+        <p class="env-note">感温包一栏给出该温度下的标准阻值与分压电压，实测偏差超过 ±5% 时先查插头、线束，再考虑更换。</p>
+      </div>
+    </section>
+
+    <!-- ================= 曲线 ================= -->
+    <section class="view" id="view-curve" role="tabpanel" aria-labelledby="tab-curve">
+      <div class="view-head">
+        <h2>阻值特性曲线</h2>
+        <p>按住图表可拖动读数，对比不同规格的 NTC 特性</p>
+      </div>
+
+      <div class="card">
+        <div class="seg" id="curveSpecSeg" role="group" aria-label="曲线规格">
+          <button class="seg-btn active" data-cspec="all" aria-pressed="true">全部</button>
+          <button class="seg-btn" data-cspec="15k" aria-pressed="false">15kΩ</button>
+          <button class="seg-btn" data-cspec="20k" aria-pressed="false">20kΩ</button>
+          <button class="seg-btn" data-cspec="50k" aria-pressed="false">50kΩ</button>
+        </div>
+        <div class="seg" id="metricSeg" role="group" aria-label="纵轴指标">
+          <button class="seg-btn active" data-metric="r" aria-pressed="true">阻值 kΩ</button>
+          <button class="seg-btn" data-metric="v" aria-pressed="false">分压电压 V</button>
+        </div>
+        <div class="chart-wrap">
+          <svg class="chart" id="curveChart" viewBox="0 0 340 210" role="img" aria-label="感温包阻值随温度变化曲线"></svg>
+          <div class="chart-tip" id="curveTip" hidden></div>
+        </div>
+        <div class="legend" id="curveLegend"></div>
+        <div class="chart-note" id="curveNote">纵轴为对数刻度。曲线越陡，相同温度误差对应的阻值误差越大。</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="eyebrow">关键温度点</span>
+          <span class="muted" id="keyTableSpec">15kΩ</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>温度 ℃</th><th class="num">阻值 kΩ</th><th class="num">分压电压 V</th><th class="num">相对 25℃</th></tr></thead>
+            <tbody id="keyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 冷媒 ================= -->
+    <section class="view" id="view-ref" role="tabpanel" aria-labelledby="tab-ref">
+      <div class="view-head">
+        <h2>冷媒压力换算</h2>
+        <p>R410A、R32、R22、R134A 饱和温度与压力互查，附过热度快速计算</p>
+      </div>
+
+      <div class="two-col">
+        <div class="col">
+          <div class="card">
+            <div class="card-head"><span class="eyebrow">冷媒种类</span><span class="muted" id="refRange">—</span></div>
+            <div class="seg ref-seg" id="refSeg" role="group" aria-label="冷媒种类">
+              <button class="seg-btn active" data-ref="r410a" aria-pressed="true">R410A</button>
+              <button class="seg-btn" data-ref="r32" aria-pressed="false">R32</button>
+              <button class="seg-btn" data-ref="r22" aria-pressed="false">R22</button>
+              <button class="seg-btn" data-ref="r134a" aria-pressed="false">R134A</button>
+            </div>
+            <div class="spec-meta" id="refMeta">—</div>
+
+            <div class="card-head mt16"><span class="eyebrow">换算方向</span></div>
+            <div class="seg" id="refModeSeg" role="group" aria-label="换算方向">
+              <button class="seg-btn active" data-rmode="t" aria-pressed="true">温度 → 压力</button>
+              <button class="seg-btn" data-rmode="p" aria-pressed="false">压力 → 温度</button>
+            </div>
+
+            <label class="field-label" for="refInputMain"><span id="refInputLabel">饱和温度</span></label>
+            <div class="input-row">
+              <input id="refInputMain" type="number" inputmode="decimal" step="any" autocomplete="off" placeholder="0.0">
+              <span class="unit" id="refInputUnit">℃</span>
+            </div>
+            <div class="hint" id="refHint">—</div>
+            <div id="refResult" style="margin-top:6px"></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-head"><span class="eyebrow" id="refChartTitle">饱和曲线</span><span class="muted">表压 kgf/cm²</span></div>
+            <div class="chart-wrap">
+              <svg class="chart" id="refChart" viewBox="0 0 340 210" role="img" aria-label="冷媒饱和压力随温度变化曲线"></svg>
+              <div class="chart-tip" id="refTip" hidden></div>
+            </div>
+            <div class="chart-note">1 kgf/cm² ≈ 0.09807 MPa ≈ 0.9807 bar。表压 = 绝对压力 − 1 kgf/cm²（大气压按 1 kgf/cm² 计）。按住曲线可拖动读数。</div>
+          </div>
+        </div>
+      </div>
+
+      <details class="card" id="shCard">
+        <summary>
+          <span>过热度快速计算 <em style="font-style:normal;color:var(--dim);font-size:11px" id="shRefTag">按 R410A 换算</em></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="details-body">
+          <div class="hc-row">
+            <div class="fld">
+              <label for="shP">低压表压 kgf/cm²</label>
+              <div class="input-row"><input id="shP" type="number" inputmode="decimal" step="any" placeholder="0.00"><span class="unit">kgf/cm²</span></div>
+            </div>
+            <div class="fld">
+              <label for="shT">回气温度 ℃</label>
+              <div class="input-row"><input id="shT" type="number" inputmode="decimal" step="any" placeholder="0.0"><span class="unit">℃</span></div>
+            </div>
+          </div>
+          <div class="hc-out" id="shOut">输入低压表压与回气温度，自动算出蒸发温度与过热度。</div>
+        </div>
+      </details>
+
+      <div class="card">
+        <div class="card-head"><span class="eyebrow" id="cmpTitle">四种冷媒对照</span><span class="muted" id="cmpHint">同一工况下的饱和参数</span></div>
+        <div class="cmp" id="cmpList"></div>
+      </div>
+
+      <details class="card" id="refTableCard">
+        <summary>
+          <span>全表数据 <em style="font-style:normal;color:var(--dim);font-size:11px" id="refTableCount">—</em></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="details-body">
+          <div class="table-wrap tall">
+            <table>
+              <thead><tr><th>温度 ℃</th><th class="num">表压 kgf/cm²</th><th class="num">表压 MPa</th><th class="num">绝对 kgf/cm²</th></tr></thead>
+              <tbody id="refTableBody"></tbody>
+            </table>
+          </div>
+          <div class="chart-note">按原表逐行抄录；高亮行为当前查询最接近的温度点。MPa 由表压换算，最多保留三位小数。</div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ================= 传感器 ================= -->
+    <section class="view" id="view-sensor" role="tabpanel" aria-labelledby="tab-sensor">
+      <div class="view-head">
+        <h2>压力传感器</h2>
+        <p>R410A 高、低压传感器：输出电压、压力、饱和温度三向互查</p>
+      </div>
+
+      <div class="sensor-grid">
+        <div class="col">
+          <div class="card">
+            <div class="card-head"><span class="eyebrow">传感器</span><span class="muted" id="senRange">—</span></div>
+            <div class="seg" id="senSeg" role="group" aria-label="传感器类型">
+              <button class="seg-btn active" data-sen="high" aria-pressed="true">高压传感器</button>
+              <button class="seg-btn" data-sen="low" aria-pressed="false">低压传感器</button>
+            </div>
+            <div class="spec-meta" id="senMeta">—</div>
+
+            <div class="card-head mt16"><span class="eyebrow">已知量</span><span class="muted">任填一项</span></div>
+            <div class="seg" id="senModeSeg" role="group" aria-label="输入类型">
+              <button class="seg-btn active" data-smode="v" aria-pressed="true">电压</button>
+              <button class="seg-btn" data-smode="p" aria-pressed="false">表压</button>
+              <button class="seg-btn" data-smode="t" aria-pressed="false">温度</button>
+            </div>
+
+            <label class="field-label" for="senInput"><span id="senInputLabel">信号电压</span><span class="opt" id="senInputOpt">信号线对地</span></label>
+            <div class="input-row">
+              <input id="senInput" type="text" inputmode="decimal" autocomplete="off" placeholder="2.500" aria-describedby="senHint">
+              <span class="unit" id="senUnit">V</span>
+            </div>
+            <div class="hint-row">
+              <span class="hint" id="senHint">—</span>
+              <button class="field-chip" id="senEnvChip" type="button" hidden>取环境温度</button>
+            </div>
+          </div>
+
+          <div class="card result" id="senResult" aria-live="polite"></div>
+        </div>
+
+        <div class="col">
+          <div class="card">
+            <div class="card-head"><span class="eyebrow">电压—压力特性</span><span class="muted">绝对压力 MPa</span></div>
+            <div class="chart-wrap">
+              <svg class="chart" id="senChart" viewBox="0 0 340 210" role="img" aria-label="R410A 高压与低压传感器的输出电压与绝对压力对应曲线"></svg>
+              <div class="chart-tip" id="senTip" hidden></div>
+            </div>
+            <div class="legend" id="senLegend"></div>
+            <div class="chart-note">横轴为信号电压，纵轴为绝对压力。同一压力下两条曲线对应的电压不同，交叉读数可判断换件时是否装错传感器。</div>
+          </div>
+
+          <details class="card" id="senTableCard">
+            <summary>
+              <span>全表数据 <em style="font-style:normal;color:var(--dim);font-size:11px" id="senTableCount">—</em></span>
+              <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="details-body">
+              <div class="table-wrap tall">
+                <table>
+                  <thead><tr><th>温度 ℃</th><th class="num">绝对 kPa</th><th class="num">表压 MPa</th><th class="num">电压 V</th></tr></thead>
+                  <tbody id="senTableBody"></tbody>
+                </table>
+              </div>
+              <div class="chart-note">原表 1℃ 步进，逐行抄录；高亮行为当前查询最接近的温度点。</div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <details class="card" id="senCheckCard">
+        <summary>
+          <span>实测核对 <em style="font-style:normal;color:var(--dim);font-size:11px">表压 + 电压</em></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="details-body">
+          <div class="hc-row">
+            <div class="fld">
+              <label for="senCheckP">实测表压 MPa</label>
+              <div class="input-row"><input id="senCheckP" type="number" inputmode="decimal" step="any" placeholder="1.500"><span class="unit">MPa</span></div>
+            </div>
+            <div class="fld">
+              <label for="senCheckV">实测电压 V</label>
+              <div class="input-row"><input id="senCheckV" type="number" inputmode="decimal" step="any" placeholder="2.500"><span class="unit">V</span></div>
+            </div>
+          </div>
+          <div class="hc-out" id="senCheckOut">输入同一时刻的表压与信号电压，自动算出应有输出与偏差。</div>
+          <div class="chart-note">经验阈值（非厂家规范）：偏差 ±0.10 V 内视为一致，超过 ±0.25 V 重点排查传感器与线束。</div>
+        </div>
+      </details>
+
+      <div class="card">
+        <div class="card-head"><span class="eyebrow">怎么看</span><span class="muted">R410A · 5V 供电</span></div>
+        <p class="env-note">压力传感器三线：<b>5V、GND、信号</b>。上电后用万用表直流电压档测信号线对地电压，就是本页输入的电压值；断电测通断只能查线，判断不了传感器。</p>
+        <p class="env-note">高压传感器覆盖 <b>−40 ~ 71℃</b>、绝对 176 ~ 4893 kPa，低压传感器覆盖 <b>−70 ~ 40℃</b>、绝对 36 ~ 2439 kPa。两者量程不同，<b>同一压力下输出电压也不同</b>，换件别只看插头形状。</p>
+        <p class="env-note">停机平衡时，环境温度对应的 R410A 饱和压力在高、低压两侧应基本一致，两个传感器各自的输出都应落在表中；若一侧恒为 0 V 或 5 V，先查供电、插头与信号线，再换传感器。</p>
+      </div>
+    </section>
+
+    <!-- ================= 记录 ================= -->
+    <section class="view" id="view-rec" role="tabpanel" aria-labelledby="tab-rec">
+      <div class="view-head">
+        <h2>检测记录</h2>
+        <p>保存在本机浏览器中，最多保留 100 条</p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="eyebrow">最近记录</span>
+          <span class="muted" id="recCount">0 条</span>
+        </div>
+        <div class="rec-list" id="recList"></div>
+        <div id="recFoot" class="mt14" hidden>
+          <button class="btn ghost" id="clearBtn" style="width:100%">清空全部记录</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="eyebrow">怎么用</span></div>
+        <div class="chart-note" style="margin-top:8px">在「检测」页得到换算结果后，点「记录本次」即可存下规格、输入值与换算温度。现场批量排查多台机组时，用记录页回看每一台的读数，避免纸质记录遗漏。</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 数据说明 -->
+<div class="sheet-backdrop" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-grip"></div>
+    <h3 id="sheetTitle" tabindex="-1">数据说明与勘误</h3>
+    <h4>数据来源</h4>
+    <p>《格力电器商用空调上门服务手册》第五部分「常用感温包阻值特性表」、第六部分「物性参数表」，原书第 125–135 页。冷媒表含 R410A、R134A、R22、R32 四种。</p>
+    <p>压力传感器表取自同一手册 5.3 节「压力传感器电压和压力对应表」，原书第 228–230 页：5.3.1 高压传感器特性（R410a）、5.3.2 低频压传感器特性（R410a）。</p>
+    <h4>覆盖范围</h4>
+    <ul>
+      <li>感温包 15kΩ：−20 ~ 153℃，174 点；20kΩ：−30 ~ 160℃，191 点；50kΩ：−30 ~ 150℃，181 点</li>
+      <li>R410A：−50 ~ 71.8℃，123 点（1℃ 步进，末点 71.8℃）</li>
+      <li>R32：−50 ~ 78℃，129 点</li>
+      <li>R22：−50 ~ 60℃，51 点（低温段 5℃、高温段 2℃ 步进）</li>
+      <li>R134A：−40 ~ 60℃，89 点</li>
+      <li>高压传感器：−40 ~ 71℃，112 点；绝对压力 176 ~ 4893 kPa；输出 0.102 ~ 5.130 V</li>
+      <li>低压传感器：−70 ~ 40℃，111 点；绝对压力 36 ~ 2439 kPa；输出 0.369 ~ 5.175 V</li>
+    </ul>
+    <h4>分压电压怎么来的</h4>
+    <p>手册电压按 5V 供电、感温包与分压电阻串联取值：</p>
+    <div class="formula">V = 5 × Rd / (R + Rd)</div>
+    <p>15kΩ、20kΩ 表的分压电阻分别为 15 kΩ、20 kΩ；50kΩ 表为 4.3 kΩ。所以 25℃ 时三种规格的分压电压都约为 2.5V（50kΩ 为 0.402V）。</p>
+    <h4>压力单位与表压</h4>
+    <p>原表单位为 kgf/cm²。1 kgf/cm² ≈ 0.09807 MPa ≈ 0.9807 bar；表压 = 绝对压力 − 1 kgf/cm²（大气压按 1 kgf/cm² 计）。App 内 MPa 由对应压力换算，保留三位小数。</p>
+    <h4>对原始数据的 5 处修正</h4>
+    <p>NTC 50kΩ 表三处明显错行／小数点丢失，按相邻温度点插值修正，分压电压同步重算：</p>
+    <ul>
+      <li>55℃：14.018 → <b>14.629 kΩ</b>（原值与 56℃ 倒挂）</li>
+      <li>59℃：17.617 → <b>12.727 kΩ</b>（原值跳变且电压回落到 50℃ 水平）</li>
+      <li>64℃：10544 → <b>10.544 kΩ</b>（小数点丢失）</li>
+    </ul>
+    <p>冷媒 R22 表一处错值：</p>
+    <ul>
+      <li>30℃：9.081 → <b>11.89 kgf/cm²</b>（原值与 20℃ 行完全相同且低于 28℃ 的 11.275；按 28℃ 与 32℃ 线性插值，表压同步为 10.89）</li>
+    </ul>
+    <p>压力传感器低压表一处错值：</p>
+    <ul>
+      <li>−1℃：799 kPa / 1.895 V → <b>779 kPa / 1.855 V</b>（与同温度高压表 779 kPa 不符，且 −2℃ 为 754 kPa、0℃ 为 804 kPa，原值破坏 1℃ 步进的连续性）</li>
+    </ul>
+    <h4>临界点提示</h4>
+    <p>R410A 表止于 71.8℃（绝对压力 48.93 kgf/cm²，约 4.80 MPa），R32 表止于 78℃（约 5.66 MPa），均已接近临界点。超过表末温度不存在气液两相共存，压力不再沿饱和曲线变化，App 不做外推。</p>
+    <p>R22、R134A 表止于 60℃，属常用工况上限，并非临界温度（分别约 96℃、101℃）。</p>
+    <h4>压力传感器表怎么用</h4>
+    <p>表列的是<b>绝对压力</b>，App 另按 1 个大气压 = 101.325 kPa 换算出表压（MPa），便于与压力表对照。传感器为 5V 供电、三线（5V / GND / 信号），输出 0.1 ~ 5.1 V 直流电压。</p>
+    <p>高压、低压传感器量程不同，同一压力下输出电压也不同：例如绝对压力 1.6 MPa 时，高压传感器约 1.63 V，低压传感器约 3.49 V。换件时应按压力反查对应传感器的输出电压，不能只看插头是否吻合。</p>
+    <p>「实测核对」中的 ±0.10 V / ±0.25 V 为现场经验阈值，不是厂家判定标准；厂家规范或故障代码与本工具冲突时，以厂家为准。</p>
+    <h4>环境气温与定位</h4>
+    <p>「环境」页需授权浏览器定位。坐标只用于向 Open-Meteo 公共气象接口查询当地实时气温，地名由 BigDataCloud 反查；两者均为第三方公共服务，App 不设服务器，不保存位置。坐标按约 1 km 精度缓存在本机，用于 15 分钟内免重复查询。</p>
+    <p>定位被拒、在受限 iframe 中运行或断网时，可改用「按城市查气温」或直接手动输入气温，其余参数全部由本机表格计算，不依赖网络。手动输入的气温会保留到下次修改。</p>
+    <p>气温为 2 米高度室外气温，每 15 分钟过期一次，过期后打开环境页会自动刷新一次；刷新失败时显示上次结果并标注缓存。它不等于机组蒸发温度或冷凝温度。</p>
+    <h4>现场提醒</h4>
+    <ul>
+      <li>测量前断电并放电，表笔与插头接触要牢靠。</li>
+      <li>NTC 阻值随温度变化很快，务必同时记录实际温度再比对。</li>
+      <li>本工具用于现场快速参考，最终判定以厂家规范与整机故障代码为准。</li>
+    </ul>
+    <h4>关于开发者</h4>
+    <div class="dev-card">
+      <div class="dev-row"><span class="dev-label">开发者</span><b>淹死的鱼</b></div>
+      <div class="dev-row"><span class="dev-label">邮箱</span><a href="mailto:596311341@qq.com">596311341@qq.com</a></div>
+      <div class="dev-qr-wrap">
+        <img class="dev-qr" src="data:image/png;base64,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" alt="淹死的鱼微信二维码">
+        <div class="dev-qr-text"><b>微信扫码添加</b>添加时请备注：格力小工具</div>
+      </div>
+      <div class="dev-note">本工具由淹死的鱼个人开发和维护，仅用于空调维保现场快速参考，非格力官方应用。联系方式仅用于软件使用与维保技术交流。</div>
+    </div>
+    <button class="btn primary" id="sheetClose">知道了</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var DB = {"k15":[[-20,144.0,0.4717],[-19,138.1,0.4899],[-18,128.6,0.5223],[-17,121.6,0.549],[-16,115.0,0.5769],[-15,108.7,0.6063],[-14,102.9,0.6361],[-13,97.4,0.6673],[-12,92.22,0.6995],[-11,87.35,0.7328],[-10,82.75,0.7673],[-9,78.43,0.8027],[-8,74.35,0.8394],[-7,70.5,0.8772],[-6,66.88,0.916],[-5,63.46,0.9559],[-4,60.23,0.9969],[-3,57.18,1.0391],[-2,54.31,1.0821],[-1,51.59,1.1263],[0,49.02,1.1715],[1,46.8,1.2136],[2,44.31,1.2645],[3,42.14,1.3126],[4,40.09,1.3614],[5,38.15,1.4111],[6,36.32,1.4614],[7,34.58,1.5127],[8,32.94,1.5645],[9,31.38,1.6171],[10,29.9,1.6704],[11,28.51,1.7237],[12,27.18,1.7781],[13,25.92,1.8328],[14,24.73,1.8877],[15,23.6,1.943],[16,22.53,1.9984],[17,21.51,2.0542],[18,20.54,2.1103],[19,19.63,2.1658],[20,18.75,2.2222],[21,17.93,2.2776],[22,17.14,2.3335],[23,16.39,2.3893],[24,15.68,2.4446],[25,15.0,2.5],[26,14.36,2.5545],[27,13.74,2.6096],[28,13.16,2.6634],[29,12.6,2.7174],[30,12.07,2.7706],[31,11.57,2.8227],[32,11.09,2.8747],[33,10.63,2.9263],[34,10.2,2.9762],[35,9.779,3.0268],[36,9.382,3.076],[37,9.003,3.1246],[38,8.642,3.1723],[39,8.297,3.2193],[40,7.967,3.2656],[41,7.653,3.3108],[42,7.352,3.3554],[43,7.065,3.399],[44,6.791,3.4418],[45,6.529,3.4837],[46,6.278,3.5248],[47,6.038,3.565],[48,5.809,3.6042],[49,5.589,3.6427],[50,5.379,3.6803],[51,5.179,3.7167],[52,4.986,3.7526],[53,4.802,3.7875],[54,4.625,3.8217],[55,4.456,3.8549],[56,4.294,3.8872],[57,4.139,3.9187],[58,3.99,3.9494],[59,3.848,3.9792],[60,3.711,4.0083],[61,3.579,4.0368],[62,3.454,4.0642],[63,3.333,4.091],[64,3.217,4.117],[65,3.105,4.1425],[66,2.998,4.1671],[67,2.898,4.1904],[68,2.797,4.2142],[69,2.702,4.2368],[70,2.611,4.2587],[71,2.523,4.2801],[72,2.439,4.3007],[73,2.358,4.3208],[74,2.28,4.3403],[75,2.205,4.3592],[76,2.133,4.3775],[77,2.064,4.3952],[78,1.997,4.4125],[79,1.933,4.4292],[80,1.871,4.4455],[81,1.811,4.4614],[82,1.754,4.4765],[83,1.699,4.4913],[84,1.645,4.5059],[85,1.594,4.5197],[86,1.544,4.5334],[87,1.497,4.5463],[88,1.451,4.559],[89,1.408,4.5709],[90,1.363,4.5835],[91,1.322,4.595],[92,1.282,4.6063],[93,1.244,4.6171],[94,1.207,4.6276],[95,1.171,4.6379],[96,1.136,4.648],[97,1.103,4.6575],[98,1.071,4.6668],[99,1.039,4.6761],[100,1.009,4.6849],[101,0.9801,4.6933],[102,0.9519,4.7016],[103,0.9247,4.7097],[104,0.8984,4.7175],[105,0.873,4.725],[106,0.8484,4.7323],[107,0.8246,4.7395],[108,0.8016,4.7464],[109,0.7793,4.7531],[110,0.7577,4.7596],[111,0.7369,4.7659],[112,0.7167,4.772],[113,0.6971,4.778],[114,0.6782,4.7837],[115,0.6599,4.7893],[116,0.6421,4.7948],[117,0.625,4.8],[118,0.6083,4.8051],[119,0.5922,4.8101],[120,0.5765,4.8149],[121,0.5614,4.8196],[122,0.5467,4.8242],[123,0.5324,4.8286],[124,0.5188,4.8328],[125,0.5052,4.8371],[126,0.4922,4.8411],[127,0.4796,4.8451],[128,0.4674,4.8489],[129,0.4558,4.8525],[130,0.4441,4.8562],[131,0.4329,4.8597],[132,0.4221,4.8632],[133,0.4115,4.8665],[134,0.4013,4.8697],[135,0.3914,4.8729],[136,0.3818,4.8759],[137,0.3724,4.8789],[138,0.3634,4.8817],[139,0.3545,4.8846],[140,0.346,4.8873],[141,0.3376,4.8899],[142,0.3296,4.8925],[143,0.3217,4.895],[144,0.3141,4.8974],[145,0.3066,4.8998],[146,0.2994,4.9022],[147,0.2924,4.9044],[148,0.2856,4.9066],[149,0.2789,4.9087],[150,0.2725,4.9108],[151,0.2662,4.9128],[152,0.2611,4.9145],[153,0.2542,4.9167]],"k20":[[-30,361.8,0.2619],[-29,339.8,0.2779],[-28,319.2,0.2948],[-27,300.0,0.3125],[-26,282.2,0.3309],[-25,265.5,0.3503],[-24,249.9,0.3705],[-23,235.3,0.3917],[-22,221.6,0.4139],[-21,208.9,0.4369],[-20,196.9,0.461],[-19,181.4,0.4965],[-18,171.4,0.5225],[-17,162.1,0.5491],[-16,153.3,0.577],[-15,145.0,0.6061],[-14,137.2,0.6361],[-13,129.9,0.6671],[-12,123.0,0.6993],[-11,116.5,0.7326],[-10,110.3,0.7675],[-9,104.6,0.8026],[-8,99.13,0.8394],[-7,94.0,0.8772],[-6,89.17,0.916],[-5,84.61,0.9559],[-4,80.31,0.9969],[-3,76.24,1.0391],[-2,72.41,1.0821],[-1,68.79,1.1263],[0,65.37,1.1714],[1,62.13,1.2176],[2,59.08,1.2645],[3,56.19,1.3125],[4,53.46,1.3613],[5,50.87,1.411],[6,48.42,1.4616],[7,46.11,1.5126],[8,43.92,1.5645],[9,41.84,1.6171],[10,39.87,1.6703],[11,38.01,1.7238],[12,36.24,1.7781],[13,34.57,1.8325],[14,32.98,1.8875],[15,31.47,1.9429],[16,30.04,1.9984],[17,28.68,2.0542],[18,27.39,2.1101],[19,26.17,2.1659],[20,25.01,2.2217],[21,23.9,2.2779],[22,22.85,2.3337],[23,21.85,2.3895],[24,20.9,2.445],[25,20.0,2.5],[26,19.14,2.5549],[27,18.32,2.6096],[28,17.55,2.6631],[29,16.8,2.7174],[30,16.1,2.7701],[31,15.43,2.8225],[32,14.79,2.8744],[33,14.18,2.9257],[34,13.59,2.9771],[35,13.04,3.0266],[36,12.51,3.076],[37,12.0,3.125],[38,11.52,3.1726],[39,11.06,3.2196],[40,10.62,3.2658],[41,10.2,3.3113],[42,9.803,3.3554],[43,9.42,3.399],[44,9.054,3.4419],[45,8.705,3.4837],[46,8.37,3.5249],[47,8.051,3.5649],[48,7.745,3.6043],[49,7.453,3.6426],[50,7.173,3.6801],[51,6.905,3.7168],[52,6.648,3.7526],[53,6.403,3.7874],[54,6.167,3.8216],[55,5.942,3.8548],[56,5.726,3.8871],[57,5.519,3.9186],[58,5.32,3.9494],[59,5.13,3.9793],[60,4.948,4.0083],[61,4.773,4.0367],[62,4.605,4.0642],[63,4.443,4.0912],[64,4.289,4.1171],[65,4.14,4.1425],[66,3.998,4.167],[67,3.861,4.1909],[68,3.729,4.2143],[69,3.603,4.2367],[70,3.481,4.2588],[71,3.364,4.2801],[72,3.252,4.3007],[73,3.144,4.3208],[74,3.04,4.3403],[75,2.94,4.3592],[76,2.844,4.3775],[77,2.752,4.3952],[78,2.663,4.4125],[79,2.577,4.4293],[80,2.495,4.4454],[81,2.415,4.4613],[82,2.339,4.4765],[83,2.265,4.4914],[84,2.194,4.5057],[85,2.125,4.5198],[86,2.059,4.5333],[87,1.996,4.5463],[88,1.934,4.5591],[89,1.875,4.5714],[90,1.818,4.5834],[91,1.763,4.595],[92,1.71,4.6062],[93,1.658,4.6172],[94,1.609,4.6277],[95,1.561,4.638],[96,1.515,4.6479],[97,1.47,4.6577],[98,1.427,4.667],[99,1.386,4.676],[100,1.346,4.6847],[101,1.307,4.6933],[102,1.269,4.7017],[103,1.233,4.7097],[104,1.198,4.7174],[105,1.164,4.725],[106,1.131,4.7324],[107,1.099,4.7396],[108,1.069,4.7463],[109,1.039,4.7531],[110,1.01,4.7596],[111,0.9825,4.7659],[112,0.9556,4.772],[113,0.9295,4.7779],[114,0.9043,4.7837],[115,0.8799,4.7893],[116,0.8562,4.7947],[117,0.8333,4.8],[118,0.8111,4.8051],[119,0.7895,4.8101],[120,0.7687,4.8149],[121,0.7485,4.8196],[122,0.7289,4.8242],[123,0.7099,4.8286],[124,0.6915,4.8329],[125,0.6736,4.8371],[126,0.6563,4.8411],[127,0.6395,4.8451],[128,0.6232,4.8489],[129,0.6074,4.8526],[130,0.5921,4.8562],[131,0.5772,4.8597],[132,0.5627,4.8632],[133,0.5487,4.8665],[134,0.5351,4.8697],[135,0.5219,4.8728],[136,0.509,4.8759],[137,0.4966,4.8789],[138,0.4845,4.8817],[139,0.4727,4.8846],[140,0.4613,4.8873],[141,0.4502,4.8899],[142,0.4394,4.8925],[143,0.4289,4.895],[144,0.4187,4.8975],[145,0.4088,4.8998],[146,0.3992,4.9022],[147,0.3899,4.9044],[148,0.3808,4.9066],[149,0.3719,4.9087],[150,0.3633,4.9108],[151,0.3549,4.9128],[152,0.3468,4.9148],[153,0.3389,4.9167],[154,0.3312,4.9185],[155,0.3237,4.9204],[156,0.3164,4.9221],[157,0.3093,4.9239],[158,0.3024,4.9255],[159,0.2956,4.9272],[160,0.2891,4.9288]],"k50":[[-30,911.56,0.02348],[-29,853.66,0.02506],[-28,799.98,0.02673],[-27,750.18,0.0285],[-26,703.92,0.03036],[-25,660.93,0.03232],[-24,620.94,0.03439],[-23,583.72,0.03656],[-22,549.04,0.03885],[-21,516.71,0.04127],[-20,486.55,0.0438],[-19,458.4,0.04647],[-18,432.1,0.04927],[-17,407.51,0.05221],[-16,384.51,0.0553],[-15,362.99,0.05854],[-14,342.83,0.06194],[-13,323.94,0.0655],[-12,306.23,0.06924],[-11,289.61,0.07315],[-10,274.02,0.07725],[-9,259.37,0.08154],[-8,245.61,0.08603],[-7,232.67,0.09073],[-6,220.5,0.09564],[-5,209.05,0.10077],[-4,198.27,0.10614],[-3,188.12,0.11173],[-2,178.65,0.11752],[-1,169.68,0.12358],[0,161.02,0.13005],[1,153.0,0.13668],[2,145.42,0.1436],[3,138.26,0.15081],[4,131.5,0.15832],[5,126.17,0.16479],[6,119.08,0.17426],[7,113.37,0.18271],[8,107.96,0.19152],[9,102.85,0.20065],[10,98.006,0.21015],[11,93.42,0.22002],[12,89.075,0.23025],[13,84.956,0.24088],[14,81.052,0.2519],[15,77.349,0.26332],[16,73.896,0.27495],[17,70.503,0.28742],[18,67.338,0.30012],[19,64.333,0.31326],[20,61.478,0.32686],[21,58.766,0.34091],[22,56.189,0.35544],[23,53.738,0.37045],[24,51.408,0.38594],[25,49.191,0.40194],[26,47.082,0.41843],[27,45.074,0.43545],[28,43.163,0.45298],[29,41.313,0.47136],[30,39.61,0.48964],[31,37.958,0.508779],[32,36.384,0.528463],[33,34.883,0.548707],[34,33.453,0.569491],[35,32.088,0.590854],[36,30.787,0.612763],[37,29.544,0.635268],[38,28.359,0.658318],[39,27.227,0.681955],[40,26.147,0.706145],[41,25.114,0.730944],[42,24.128,0.756297],[43,23.186,0.782216],[44,22.286,0.808696],[45,21.425,0.835763],[46,20.601,0.863419],[47,19.814,0.891598],[48,19.061,0.920337],[49,18.34,0.949647],[50,17.651,0.979454],[51,16.99,1.009864],[52,16.358,1.040759],[53,15.753,1.072159],[54,15.173,1.104093],[55,14.629,1.135823],[56,14.085,1.169432],[57,13.575,1.202797],[58,13.086,1.236627],[59,12.727,1.2627],[60,12.368,1.289897],[61,11.736,1.340733],[62,11.322,1.376264],[63,10.925,1.412151],[64,10.544,1.448397],[65,10.178,1.485012],[66,9.8269,1.521919],[67,9.4896,1.559146],[68,9.1655,1.596673],[69,8.9542,1.622127],[70,8.5551,1.672488],[71,8.2676,1.710748],[72,7.9913,1.749205],[73,7.7257,1.787838],[74,7.4702,1.826647],[75,7.2245,1.865591],[76,6.9882,1.904644],[77,6.7608,1.943802],[78,6.542,1.983029],[79,6.3315,2.022292],[80,6.1288,2.061599],[81,5.9336,2.100922],[82,5.7457,2.140219],[83,5.5647,2.179488],[84,5.3903,2.218714],[85,5.2223,2.257858],[86,5.0605,2.296886],[87,4.9044,2.335839],[88,4.7541,2.374615],[89,4.6091,2.413263],[90,4.4693,2.451735],[91,4.3345,2.49001],[92,4.2044,2.5281],[93,4.0789,2.56597],[94,3.9579,2.60357],[95,3.841,2.64095],[96,3.7283,2.67803],[97,3.6194,2.71485],[98,3.5143,2.75137],[99,3.4128,2.78757],[100,3.3147,2.82349],[101,3.22,2.85904],[102,3.1285,2.89426],[103,3.0401,2.92912],[104,2.9547,2.9636],[105,2.8721,2.99773],[106,2.7922,3.0315],[107,2.715,3.06486],[108,2.6404,3.0978],[109,2.5682,3.13037],[110,2.4983,3.16256],[111,2.4308,3.19427],[112,2.3654,3.22561],[113,2.3021,3.25654],[114,2.2409,3.28701],[115,2.1816,3.31708],[116,2.1242,3.34672],[117,2.0686,3.37594],[118,2.0148,3.4047],[119,1.9626,3.43308],[120,1.9123,3.46088],[121,1.8652,3.48732],[122,1.8158,3.51548],[123,1.7698,3.54213],[124,1.7253,3.56829],[125,1.6821,3.59406],[126,1.6402,3.61941],[127,1.5996,3.64431],[128,1.5602,3.66882],[129,1.522,3.69289],[130,1.485,3.71651],[131,1.449,3.73978],[132,1.4141,3.76262],[133,1.3803,3.78501],[134,1.3474,3.80706],[135,1.3155,3.82869],[136,1.2846,3.84987],[137,1.2545,3.87074],[138,1.2233,3.8926],[139,1.1969,3.9113],[140,1.1694,3.93096],[141,1.1476,3.94669],[142,1.1166,3.96928],[143,1.0913,3.98791],[144,1.0667,4.00619],[145,1.0429,4.02403],[146,1.0197,4.04158],[147,0.9971,4.05882],[148,0.9752,4.07567],[149,0.9538,4.09228],[150,0.9331,4.10846]]};
+
+var SPECS = [
+  {key:'15k', label:'15kΩ', rd:15,  tmin:-20, tmax:153, data:DB.k15, color:'#25e0c0'},
+  {key:'20k', label:'20kΩ', rd:20,  tmin:-30, tmax:160, data:DB.k20, color:'#5b9dff'},
+  {key:'50k', label:'50kΩ', rd:4.3, tmin:-30, tmax:150, data:DB.k50, color:'#ffb454'}
+];
+var SPEC = {};
+SPECS.forEach(function(s){ SPEC[s.key] = s; });
+
+var REFS = {
+  r410a:{name:'R410A', color:'#5b9dff', meta:'R410A · 表末 71.8℃ 接近临界点', over:'该表止于 71.8℃（约 4.80 MPa），已接近临界点，超过后无气液两相饱和状态。',
+    data:[[-50,1.09,0.09],[-49,1.15,0.15],[-48,1.21,0.21],[-47,1.27,0.27],[-46,1.33,0.33],[-45,1.4,0.4],[-44,1.46,0.46],[-43,1.54,0.54],[-42,1.61,0.61],[-41,1.68,0.68],[-40,1.76,0.76],[-39,1.84,0.84],[-38,1.93,0.93],[-37,2.02,1.02],[-36,2.11,1.11],[-35,2.2,1.2],[-34,2.3,1.3],[-33,2.4,1.4],[-32,2.5,1.5],[-31,2.61,1.61],[-30,2.72,1.72],[-29,2.83,1.83],[-28,2.95,1.95],[-27,3.07,2.07],[-26,3.19,2.19],[-25,3.32,2.32],[-24,3.45,2.45],[-23,3.59,2.59],[-22,3.73,2.73],[-21,3.88,2.88],[-20,4.03,3.03],[-19,4.18,3.18],[-18,4.34,3.34],[-17,4.5,3.5],[-16,4.67,3.67],[-15,4.84,3.84],[-14,5.02,4.02],[-13,5.2,4.2],[-12,5.38,4.38],[-11,5.58,4.58],[-10,5.77,4.77],[-9,5.97,4.97],[-8,6.18,5.18],[-7,6.39,5.39],[-6,6.61,5.61],[-5,6.84,5.84],[-4,7.07,6.07],[-3,7.3,6.3],[-2,7.54,6.54],[-1,7.79,6.79],[0,8.04,7.04],[1,8.3,7.3],[2,8.57,7.57],[3,8.84,7.84],[4,9.12,8.12],[5,9.4,8.4],[6,9.69,8.69],[7,9.99,8.99],[8,10.3,9.3],[9,10.61,9.61],[10,10.93,9.93],[11,11.25,10.25],[12,11.59,10.59],[13,11.93,10.93],[14,12.28,11.28],[15,12.63,11.63],[16,13,12],[17,13.37,12.37],[18,13.75,12.75],[19,14.13,13.13],[20,14.53,13.53],[21,14.93,13.93],[22,15.35,14.35],[23,15.77,14.77],[24,16.2,15.2],[25,16.64,15.64],[26,17.08,16.08],[27,17.54,16.54],[28,18.01,17.01],[29,18.48,17.48],[30,18.97,17.97],[31,19.46,18.46],[32,19.96,18.96],[33,20.48,19.48],[34,21,20],[35,21.53,20.53],[36,22.08,21.08],[37,22.63,21.63],[38,23.2,22.2],[39,23.77,22.77],[40,24.36,23.36],[41,24.95,23.95],[42,25.56,24.56],[43,26.18,25.18],[44,26.81,25.81],[45,27.45,26.45],[46,28.1,27.1],[47,28.76,27.76],[48,29.44,28.44],[49,30.13,29.13],[50,30.83,29.83],[51,31.54,30.54],[52,32.26,31.26],[53,33,32],[54,33.74,32.74],[55,34.5,33.5],[56,35.2,34.2],[57,36.06,35.06],[58,36.86,35.86],[59,37.67,36.67],[60,38.49,37.49],[61,39.32,38.32],[62,40.17,39.17],[63,41.03,40.03],[64,41.9,40.9],[65,42.78,41.78],[66,43.67,42.67],[67,44.57,43.57],[68,45.48,44.48],[69,46.39,45.39],[70,47.31,46.31],[71,48.23,47.23],[71.8,48.93,47.93]]},
+  r32:{name:'R32', color:'#25e0c0', meta:'R32 · 表末 78℃ 接近临界点', over:'该表止于 78℃（约 5.66 MPa），已接近临界点，超过后无气液两相饱和状态。',
+    data:[[-50,1.101,0.101],[-49,1.158,0.158],[-48,1.216,0.216],[-47,1.277,0.277],[-46,1.34,0.34],[-45,1.406,0.406],[-44,1.474,0.474],[-43,1.545,0.545],[-42,1.619,0.619],[-41,1.695,0.695],[-40,1.774,0.774],[-39,1.856,0.856],[-38,1.941,0.941],[-37,2.029,1.029],[-36,2.12,1.12],[-35,2.214,1.214],[-34,2.311,1.311],[-33,2.412,1.412],[-32,2.516,1.516],[-31,2.623,1.623],[-30,2.734,1.734],[-29,2.849,1.849],[-28,2.967,1.967],[-27,3.09,2.09],[-26,3.216,2.216],[-25,3.346,2.346],[-24,3.48,2.48],[-23,3.618,2.618],[-22,3.76,2.76],[-21,3.907,2.907],[-20,4.058,3.058],[-19,4.213,3.213],[-18,4.373,3.373],[-17,4.537,3.537],[-16,4.707,3.707],[-15,4.881,3.881],[-14,5.06,4.06],[-13,5.244,4.244],[-12,5.433,4.433],[-11,5.627,4.627],[-10,5.826,4.826],[-9,6.031,5.031],[-8,6.241,5.241],[-7,6.457,5.457],[-6,6.679,5.679],[-5,6.906,5.906],[-4,7.139,6.139],[-3,7.378,6.378],[-2,7.623,6.623],[-1,7.874,6.874],[0,8.131,7.131],[1,8.395,7.395],[2,8.665,7.665],[3,8.941,7.941],[4,9.225,8.225],[5,9.514,8.514],[6,9.811,8.811],[7,10.12,9.12],[8,10.43,9.43],[9,10.74,9.74],[10,11.07,10.07],[11,11.4,10.4],[12,11.74,10.74],[13,12.09,11.09],[14,12.44,11.44],[15,12.81,11.81],[16,13.18,12.18],[17,13.56,12.56],[18,13.95,12.95],[19,14.34,13.34],[20,14.75,13.75],[21,15.16,14.16],[22,15.58,14.58],[23,16.01,15.01],[24,16.45,15.45],[25,16.9,15.9],[26,17.35,16.35],[27,17.82,16.82],[28,18.3,17.3],[29,18.78,17.78],[30,19.28,18.28],[31,19.78,18.78],[32,20.29,19.29],[33,20.82,19.82],[34,21.35,20.35],[35,21.9,20.9],[36,22.45,21.45],[37,23.02,22.02],[38,23.6,22.6],[39,24.18,23.18],[40,24.78,23.78],[41,25.39,24.39],[42,26.01,25.01],[43,26.65,25.65],[44,27.29,26.29],[45,27.95,26.95],[46,28.62,27.62],[47,29.3,28.3],[48,29.99,28.99],[49,30.69,29.69],[50,31.41,30.41],[51,32.14,31.14],[52,32.89,31.89],[53,33.64,32.64],[54,34.41,33.41],[55,35.2,34.2],[56,36,35],[57,36.81,35.81],[58,37.64,36.64],[59,38.48,37.48],[60,39.33,38.33],[61,40.2,39.2],[62,41.09,40.09],[63,41.99,40.99],[64,42.91,41.91],[65,43.84,42.84],[66,44.79,43.79],[67,45.76,44.76],[68,46.75,45.75],[69,47.75,46.75],[70,48.77,47.77],[71,49.81,48.81],[72,50.87,49.87],[73,51.95,50.95],[74,53.05,52.05],[75,54.17,53.17],[76,55.32,54.32],[77,56.49,55.49],[78,57.7,56.7]]},
+  r22:{name:'R22', color:'#ffb454', meta:'R22 · 低温段 5℃ / 高温段 2℃ 步进', over:'该表止于 60℃（约 2.37 MPa），更高压力请查厂家高压表。',
+    data:[[-50,0.646,-0.354],[-45,0.83,-0.17],[-40,1.053,0.053],[-35,1.321,0.321],[-30,1.64,0.64],[-25,2.016,1.016],[-20,2.455,1.455],[-15,2.964,1.964],[-10,3.55,2.55],[-9,3.677,2.677],[-8,3.807,2.807],[-7,3.941,2.941],[-6,4.078,3.078],[-5,4.219,3.219],[-4,4.364,3.364],[-3,4.512,3.512],[-2,4.664,3.664],[-1,4.82,3.82],[0,4.98,3.98],[1,5.143,4.143],[2,5.311,4.311],[3,5.483,4.483],[4,5.659,4.659],[5,5.839,4.839],[6,6.023,5.023],[7,6.211,5.211],[8,6.404,5.404],[9,6.601,5.601],[10,6.803,5.803],[12,7.22,6.22],[14,7.656,6.656],[16,8.112,7.112],[18,8.586,7.586],[20,9.081,8.081],[22,9.597,8.597],[24,10.135,9.135],[26,10.694,9.694],[28,11.275,10.275],[30,11.89,10.89],[32,12.508,11.508],[34,13.16,12.16],[36,13.837,12.837],[38,14.54,13.54],[40,15.269,14.269],[42,16.024,15.024],[44,16.807,15.807],[46,17.618,16.618],[48,18.485,17.485],[50,19.327,18.327],[55,21.635,20.635],[60,24.146,23.146]]},
+  r134a:{name:'R134A', color:'#c58bff', meta:'R134A · −40 ~ 60℃', over:'该表止于 60℃（约 1.65 MPa），更高压力请查厂家高压表。',
+    data:[[-40,0.51,-0.49],[-35,0.66,-0.34],[-30,0.84,-0.16],[-25,1.06,0.06],[-24,1.11,0.11],[-23,1.16,0.16],[-22,1.22,0.22],[-21,1.27,0.27],[-20,1.33,0.33],[-19,1.39,0.39],[-18,1.45,0.45],[-17,1.51,0.51],[-16,1.57,0.57],[-15,1.64,0.64],[-14,1.71,0.71],[-13,1.78,0.78],[-12,1.85,0.85],[-11,1.93,0.93],[-10,2.01,1.01],[-9,2.09,1.09],[-8,2.17,1.17],[-7,2.25,1.25],[-6,2.34,1.34],[-5,2.43,1.43],[-4,2.53,1.53],[-3,2.62,1.62],[-2,2.72,1.72],[-1,2.82,1.82],[0,2.93,1.93],[1,3.04,2.04],[2,3.15,2.15],[3,3.26,2.26],[4,3.38,2.38],[5,3.5,2.5],[6,3.62,2.62],[7,3.75,2.75],[8,3.88,2.88],[9,4.01,3.01],[10,4.15,3.15],[11,4.29,3.29],[12,4.43,3.43],[13,4.58,3.58],[14,4.73,3.73],[15,4.88,3.88],[16,5.04,4.04],[17,5.21,4.21],[18,5.37,4.37],[19,5.54,4.54],[20,5.72,4.72],[21,5.9,4.9],[22,6.08,5.08],[23,6.27,5.27],[24,6.46,5.46],[25,6.65,5.65],[26,6.85,5.85],[27,7.06,6.06],[28,7.27,6.27],[29,7.48,6.48],[30,7.7,6.7],[31,7.93,6.93],[32,8.15,7.15],[33,8.39,7.39],[34,8.63,7.63],[35,8.87,7.87],[36,9.12,8.12],[37,9.37,8.37],[38,9.63,8.63],[39,9.9,8.9],[40,10.17,9.17],[41,10.44,9.44],[42,10.72,9.72],[43,11.01,10.01],[44,11.3,10.3],[45,11.6,10.6],[46,11.9,10.9],[47,12.21,11.21],[48,12.53,11.53],[49,12.85,11.85],[50,13.18,12.18],[51,13.51,12.51],[52,13.85,12.85],[53,14.2,13.2],[54,14.56,13.56],[55,14.92,13.92],[56,15.28,14.28],[57,15.66,14.66],[58,16.04,15.04],[59,16.42,15.42],[60,16.82,15.82]]}
+};
+
+var REF_ORDER = ['r410a','r32','r22','r134a'];
+
+var MODE_LABEL = {r:'电阻', v:'分压电压', t:'温度'};
+var LEVEL_TEXT = {good:'正常', warn:'偏差偏大', bad:'异常', info:'参考'};
+
+var state = {
+  tab:'diag',
+  spec:'15k',
+  mode:'r',
+  value:'',
+  refTemp:'',
+  curveSpec:'all',
+  curveMetric:'r',
+  curveGeom:null,
+  ref:'r410a',
+  refMode:'t',
+  refValue:'',
+  refGeom:null,
+  records:[],
+  env:{
+    phase:'idle', temp:null, feels:null, humidity:null, code:null, isDay:1,
+    tmax:null, tmin:null, place:'', source:'', obs:'', fetchedAt:0,
+    stale:false, error:'', lat:null, lon:null
+  },
+  sensor:{type:'high', mode:'v', value:'', checkP:'', checkV:''},
+  senRes:null,
+  senTableType:''
+};
+
+/* ---------------- utils ---------------- */
+function $(id){ return document.getElementById(id); }
+function num(v){
+  if(v === null || v === undefined) return null;
+  var s = String(v).trim();
+  if(s === '') return null;
+  var n = Number(s);
+  return isFinite(n) ? n : null;
+}
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function fmtR(r){
+  if(!isFinite(r)) return '—';
+  if(r >= 100) return r.toFixed(1);
+  if(r >= 10) return r.toFixed(2);
+  if(r >= 1) return r.toFixed(3);
+  return r.toFixed(3);
+}
+function fmtV(v){ return isFinite(v) ? v.toFixed(3) : '—'; }
+function fmtT(t){ return isFinite(t) ? t.toFixed(1) : '—'; }
+
+/* ---------------- core model ---------------- */
+function sample(sp, t){
+  var d = sp.data;
+  if(t < d[0][0] || t > d[d.length-1][0]) return null;
+  var i = 0;
+  while(i < d.length-1 && d[i+1][0] <= t) i++;
+  if(i === d.length-1) return {r:d[i][1], v:d[i][2]};
+  var a = d[i], b = d[i+1];
+  var f = (t - a[0]) / (b[0] - a[0]);
+  var r = Math.exp(Math.log(a[1]) + (Math.log(b[1]) - Math.log(a[1])) * f);
+  var v = a[2] + (b[2] - a[2]) * f;
+  return {r:r, v:v};
+}
+function tempFromR(sp, r){
+  var d = sp.data;
+  if(r > d[0][1]) return {status:'high'};
+  if(r < d[d.length-1][1]) return {status:'low'};
+  for(var i=0;i<d.length-1;i++){
+    if(r <= d[i][1] && r >= d[i+1][1]){
+      var a = d[i], b = d[i+1];
+      var f = (Math.log(r) - Math.log(a[1])) / (Math.log(b[1]) - Math.log(a[1]));
+      return {status:'ok', temp:a[0] + (b[0]-a[0])*f};
+    }
+  }
+  return {status:'low'};
+}
+function vFromR(sp, r){ return 5 * sp.rd / (r + sp.rd); }
+
+function computeDiag(){
+  var sp = SPEC[state.spec];
+  var mode = state.mode;
+  var raw = num(state.value);
+  if(raw === null) return null;
+
+  var r = null, temp = null, v = null;
+
+  if(mode === 't'){
+    if(raw < sp.tmin || raw > sp.tmax) return {kind:'tOut', input:raw};
+    var s = sample(sp, raw);
+    temp = raw; r = s.r; v = s.v;
+  } else if(mode === 'r'){
+    if(raw <= 0) return {kind:'invalid'};
+    var tr = tempFromR(sp, raw);
+    if(tr.status === 'high') return {kind:'rHigh', r:raw};
+    if(tr.status === 'low') return {kind:'rLow', r:raw};
+    temp = tr.temp; r = raw; v = vFromR(sp, raw);
+  } else {
+    if(raw <= 0 || raw > 5.05) return {kind:'vInvalid'};
+    if(raw >= 4.995) return {kind:'short', v:raw};
+    if(raw <= 0.004) return {kind:'open', v:raw};
+    r = sp.rd * (5 - raw) / raw;
+    var tv = tempFromR(sp, r);
+    if(tv.status === 'high') return {kind:'rHigh', r:r, v:raw};
+    if(tv.status === 'low') return {kind:'rLow', r:r, v:raw};
+    temp = tv.temp; v = raw;
+  }
+
+  var ref = num(state.refTemp);
+  var out = {
+    kind:'ok', mode:mode, sp:sp, temp:temp, r:r, v:v,
+    ref:null, verdict:null, cross:[]
+  };
+
+  // 参考温度比对
+  if(ref !== null && (mode === 'r' || mode === 'v') && ref >= sp.tmin && ref <= sp.tmax){
+    var std = sample(sp, ref);
+    var dT = temp - ref;
+    var pct = (r - std.r) / std.r * 100;
+    out.ref = {t:ref, r:std.r, v:std.v, dT:dT, pct:pct};
+    var abs = Math.abs(dT);
+    if(abs <= 1.5){
+      out.verdict = {level:'good', title:'读数正常',
+        desc:'与参考温度相差 ' + abs.toFixed(1) + ' K，阻值偏差 ' + (pct>=0?'+':'') + pct.toFixed(1) + '%，感温包特性在正常范围内。'};
+    } else if(abs <= 3){
+      out.verdict = {level:'warn', title:'偏差偏大',
+        desc:'推算温度比参考值' + (dT>0?'高':'低') + ' ' + abs.toFixed(1) + ' K（阻值偏差 ' + (pct>=0?'+':'') + pct.toFixed(1) + '%）。先检查插头接触与线束，清洁后复测。'};
+    } else {
+      out.verdict = {level:'bad', title:'建议更换',
+        desc:'推算温度比参考值' + (dT>0?'高':'低') + ' ' + abs.toFixed(1) + ' K（阻值偏差 ' + (pct>=0?'+':'') + pct.toFixed(1) + '%），NTC 特性已明显漂移，建议更换感温包后复测。'};
+    }
+  } else if(ref !== null && mode !== 't'){
+    out.verdict = {level:'info', title:'参考温度超出量程', desc:'参考温度不在该规格的 ' + sp.tmin + ' ~ ' + sp.tmax + '℃ 范围内，未做偏差判定。'};
+  } else {
+    out.verdict = {level:'info', title:'已换算',
+      desc: mode === 't' ? '这是该温度下的标准值，可用于比对实测阻值。' : '填写参考温度后，可直接判断感温包偏差大小。'};
+  }
+
+  // 三规格对照
+  if(mode === 't'){
+    out.crossTitle = '该温度下的标准阻值';
+    SPECS.forEach(function(s){
+      var p = sample(s, temp);
+      out.cross.push({key:s.key, label:s.label, text: p ? fmtR(p.r) : '超量程', unit: p ? 'kΩ' : '', ok:!!p});
+    });
+    out.crossHint = '同温度下各规格阻值差别很大';
+  } else {
+    out.crossTitle = '该读数在各规格下的温度';
+    SPECS.forEach(function(s){
+      var tr = tempFromR(s, r);
+      out.cross.push({key:s.key, label:s.label, text: tr.status==='ok' ? fmtT(tr.temp) : '超量程', unit: tr.status==='ok' ? '℃' : '', ok: tr.status==='ok'});
+    });
+    out.crossHint = '室温附近的即为其型号';
+  }
+  return out;
+}
+
+function diagHero(res){
+  if(!res) return null;
+  if(res.kind === 'ok'){
+    if(res.mode === 't') return {kicker:'标准阻值', value:fmtR(res.r), unit:'kΩ'};
+    return {kicker:'换算温度', value:fmtT(res.temp), unit:'℃'};
+  }
+  return null;
+}
+
+/* ---------------- render: diagnose ---------------- */
+function renderSpecMeta(){
+  var sp = SPEC[state.spec];
+  $('specRange').textContent = sp.tmin + ' ~ ' + sp.tmax + '℃';
+  $('specMeta').textContent = '分压电阻 ' + (sp.rd === 4.3 ? '4.3' : sp.rd) + ' kΩ · 5V 供电 · ' + sp.data.length + ' 个温度点';
+  var d = sp.data, minR = d[d.length-1][1], maxR = d[0][1];
+  $('inputHint').textContent = state.mode === 't'
+    ? '输入 ' + sp.tmin + ' ~ ' + sp.tmax + '℃ 之间的温度'
+    : '量程 ' + fmtR(minR) + ' ~ ' + fmtR(maxR) + ' kΩ（对应 ' + sp.tmax + ' ~ ' + sp.tmin + '℃）';
+}
+
+function renderUnitAndPlaceholder(){
+  var m = state.mode;
+  $('inputLabel').textContent = m==='r' ? '实测阻值' : (m==='v' ? '实测分压电压' : '实测温度');
+  $('inputUnit').textContent = m==='r' ? 'kΩ' : (m==='v' ? 'V' : '℃');
+  $('mainInput').placeholder = m==='r' ? '0.00' : (m==='v' ? '2.500' : '25.0');
+  $('signBtn').hidden = m !== 't';
+}
+
+function renderResult(){
+  var card = $('resultCard');
+  var res = computeDiag();
+
+  if(!res){
+    card.innerHTML = '<div class="empty">' +
+      '<div class="empty-ring">℃</div>' +
+      '<p>输入测量值后自动换算</p>' +
+      '<small>支持电阻、分压电压、温度三种输入</small>' +
+      '</div>';
+    return;
+  }
+
+  var sp = SPEC[state.spec];
+  var html = '';
+  var hero = diagHero(res);
+  var level, title, desc, badge;
+
+  if(res.kind === 'rHigh'){
+    level='bad'; title='阻值超出量程上限';
+    desc=(res.v !== undefined ? '分压 ' + fmtV(res.v) + 'V 对应阻值 ' + fmtR(res.r) + ' kΩ，' : '实测 ' + fmtR(res.r) + ' kΩ，') +
+      '高于 ' + sp.tmin + '℃ 对应的 ' + fmtR(sp.data[0][1]) + ' kΩ。常见于感温包开路、插头虚接，或规格选错。';
+    badge='阻值过高';
+    html += '<div class="hero"><span class="hero-kicker">超出 ' + sp.label + ' 量程</span><div class="hero-num">' + fmtR(res.r) + '<span class="u">kΩ</span></div>' +
+      '<span class="badge bad"><i class="dot"></i>' + badge + '</span></div>';
+  } else if(res.kind === 'rLow'){
+    level='bad'; title='阻值低于量程下限';
+    desc=(res.v !== undefined ? '分压 ' + fmtV(res.v) + 'V 对应阻值 ' + fmtR(res.r) + ' kΩ，' : '实测 ' + fmtR(res.r) + ' kΩ，') +
+      '低于 ' + sp.tmax + '℃ 对应的 ' + fmtR(sp.data[sp.data.length-1][1]) + ' kΩ，已接近短路。检查线束是否进水、绝缘破损或插头短路。';
+    badge='阻值过低';
+    html += '<div class="hero"><span class="hero-kicker">超出 ' + sp.label + ' 量程</span><div class="hero-num">' + fmtR(res.r) + '<span class="u">kΩ</span></div>' +
+      '<span class="badge bad"><i class="dot"></i>' + badge + '</span></div>';
+  } else if(res.kind === 'open'){
+    level='bad'; title='分压电压接近 0V';
+    desc='读数 ' + fmtV(res.v) + 'V，感温包阻值极大、回路几乎没有电流，判断为开路。检查插头、线束断点与感温包本体。';
+    badge='疑似开路';
+    html += '<div class="hero"><span class="hero-kicker">分压电压</span><div class="hero-num">' + fmtV(res.v) + '<span class="u">V</span></div>' +
+      '<span class="badge bad"><i class="dot"></i>' + badge + '</span></div>';
+  } else if(res.kind === 'short'){
+    level='bad'; title='分压电压接近 5V';
+    desc='读数 ' + fmtV(res.v) + 'V，说明感温包阻值趋近于 0，判断为短路。检查线束进水、破皮或插头搭接。';
+    badge='疑似短路';
+    html += '<div class="hero"><span class="hero-kicker">分压电压</span><div class="hero-num">' + fmtV(res.v) + '<span class="u">V</span></div>' +
+      '<span class="badge bad"><i class="dot"></i>' + badge + '</span></div>';
+  } else if(res.kind === 'tOut'){
+    level='warn'; title='温度超出该规格量程';
+    desc='输入 ' + fmtT(res.input) + '℃，而 ' + sp.label + ' 表只覆盖 ' + sp.tmin + ' ~ ' + sp.tmax + '℃。换用覆盖该温度区间的规格查看。';
+    badge='超量程';
+    html += '<div class="hero"><span class="hero-kicker">输入温度</span><div class="hero-num">' + fmtT(res.input) + '<span class="u">℃</span></div>' +
+      '<span class="badge warn"><i class="dot"></i>' + badge + '</span></div>';
+  } else if(res.kind === 'vInvalid'){
+    level='warn'; title='电压输入无效';
+    desc='分压电压应在 0 ~ 5V 之间。若测得 5V 以上，检查表笔档位与供电是否正常。';
+    badge='输入无效';
+    html += '<div class="hero"><span class="hero-kicker">分压电压</span><div class="hero-num">' + fmtV(num(state.value)) + '<span class="u">V</span></div>' +
+      '<span class="badge warn"><i class="dot"></i>' + badge + '</span></div>';
+  } else if(res.kind === 'invalid'){
+    level='warn'; title='阻值输入无效';
+    desc='电阻必须大于 0。请重新测量，注意表笔是否接触良好。';
+    badge='输入无效';
+    html += '<div class="hero"><span class="hero-kicker">实测阻值</span><div class="hero-num">' + num(state.value) + '<span class="u">kΩ</span></div>' +
+      '<span class="badge warn"><i class="dot"></i>' + badge + '</span></div>';
+  } else {
+    level = res.verdict.level;
+    title = res.verdict.title;
+    desc = res.verdict.desc;
+    html += '<div class="hero"><span class="hero-kicker">' + hero.kicker + '</span>' +
+      '<div class="hero-num">' + hero.value + '<span class="u">' + hero.unit + '</span></div>' +
+      '<span class="badge ' + level + '"><i class="dot"></i>' + LEVEL_TEXT[level] + '</span></div>';
+
+    var pos = clamp((res.temp - sp.tmin) / (sp.tmax - sp.tmin) * 100, 0, 100);
+    html += '<div class="rangebar"><span class="mark" style="left:' + pos.toFixed(1) + '%"></span>' +
+      '<span class="cap l">' + sp.tmin + '℃</span><span class="cap r">' + sp.tmax + '℃</span></div>';
+
+    var thirdLabel, thirdVal, thirdUnit;
+    if(res.mode === 't'){
+      thirdLabel = '±5% 区间'; thirdVal = fmtR(res.r*0.95) + '~' + fmtR(res.r*1.05); thirdUnit = 'kΩ';
+    } else {
+      var base = sample(sp, 25);
+      thirdLabel = '相对 25℃'; thirdVal = base ? (res.r/base.r).toFixed(2) : '—'; thirdUnit = '×';
+    }
+    html += '<div class="stats">' +
+      '<div><span>阻值</span><b>' + fmtR(res.r) + '<i>kΩ</i></b></div>' +
+      '<div><span>分压电压</span><b>' + fmtV(res.v) + '<i>V</i></b></div>' +
+      '<div><span>' + thirdLabel + '</span><b>' + thirdVal + '<i>' + thirdUnit + '</i></b></div>' +
+      '</div>';
+
+    html += '<div class="verdict ' + level + '"><div class="vt">' + title + '</div><p>' + desc + '</p></div>';
+    html += '<div class="result-actions"><button class="btn primary" id="saveBtn">记录本次</button>' +
+      '<button class="btn ghost" id="resetBtn">清空</button></div>';
+  }
+
+  if(res.kind !== 'ok'){
+    html += '<div class="verdict ' + level + '"><div class="vt">' + title + '</div><p>' + desc + '</p></div>';
+  }
+  card.innerHTML = html;
+}
+
+function renderCross(){
+  var res = computeDiag();
+  var tb = $('crossTable').querySelector('tbody');
+  var hint = $('crossHint');
+  var rows = '';
+
+  if(!res || !res.cross || !res.cross.length){
+    ['15k','20k','50k'].forEach(function(k){
+      rows += '<tr><td>' + SPEC[k].label + '</td><td>—</td></tr>';
+    });
+    tb.innerHTML = rows;
+    hint.textContent = '输入读数后自动对照';
+    return;
+  }
+  res.cross.forEach(function(c){
+    var on = c.key === state.spec ? ' class="on"' : '';
+    var tag = c.key === state.spec ? '<span class="tag">当前</span>' : '';
+    rows += '<tr' + on + '><td>' + c.label + tag + '</td><td>' + c.text + (c.unit ? ' <span class="muted">' + c.unit + '</span>' : '') + '</td></tr>';
+  });
+  tb.innerHTML = rows;
+  hint.textContent = res.crossHint;
+}
+
+function renderDiag(){
+  renderSpecMeta();
+  renderResult();
+  renderCross();
+}
+
+/* ---------------- chart helpers ---------------- */
+var CW = 340, CH = 210, CL = 40, CR = 12, CT = 14, CB = 28;
+var CXR_MIN = -30, CXR_MAX = 160;
+
+function xPos(t, xmin, xmax){
+  return CL + (t - xmin) / (xmax - xmin) * (CW - CL - CR);
+}
+function yLog(val, ymin, ymax){
+  var lo = Math.log10(ymin), hi = Math.log10(ymax);
+  return CT + (1 - (Math.log10(val) - lo) / (hi - lo)) * (CH - CT - CB);
+}
+function yLin(val, ymin, ymax){
+  return CT + (1 - (val - ymin) / (ymax - ymin)) * (CH - CT - CB);
+}
+function niceLogTicks(ymin, ymax){
+  var pool = [0.1,0.2,0.3,0.5,1,2,3,5,10,20,30,50,100,200,300,500,1000];
+  return pool.filter(function(v){ return v > ymin * 1.15 && v < ymax * 0.87; });
+}
+function fmtAxis(v){
+  if(v >= 1000) return (v/1000) + 'k';
+  if(v >= 1) return String(v);
+  return String(v);
+}
+
+function buildCurve(){
+  var metric = state.curveMetric;
+  var keys = state.curveSpec === 'all' ? SPECS.map(function(s){return s.key;}) : [state.curveSpec];
+  var specs = keys.map(function(k){ return SPEC[k]; });
+
+  var ymin, ymax;
+  if(metric === 'r'){
+    var all = [];
+    specs.forEach(function(s){ s.data.forEach(function(d){ all.push(d[1]); }); });
+    ymin = Math.min.apply(null, all) * 0.75;
+    ymax = Math.max.apply(null, all) * 1.35;
+  } else {
+    ymin = 0; ymax = 5;
+  }
+
+  var svg = '';
+  var s = '';
+  var xTicks = [-30,0,30,60,90,120,150];
+  var yTicks = metric === 'r' ? niceLogTicks(ymin, ymax) : [0,1,2,3,4,5];
+
+  yTicks.forEach(function(v){
+    var y = metric === 'r' ? yLog(v, ymin, ymax) : yLin(v, ymin, ymax);
+    s += '<line class="grid" x1="' + CL + '" y1="' + y.toFixed(1) + '" x2="' + (CW-CR) + '" y2="' + y.toFixed(1) + '"/>';
+    s += '<text x="' + (CL-6) + '" y="' + (y+3).toFixed(1) + '" text-anchor="end">' + fmtAxis(v) + '</text>';
+  });
+  xTicks.forEach(function(t){
+    var x = xPos(t, CXR_MIN, CXR_MAX);
+    s += '<line class="grid" x1="' + x.toFixed(1) + '" y1="' + CT + '" x2="' + x.toFixed(1) + '" y2="' + (CH-CB) + '"/>';
+    s += '<text x="' + x.toFixed(1) + '" y="' + (CH-9) + '" text-anchor="middle">' + t + '</text>';
+  });
+
+  s += '<line class="axis" x1="' + CL + '" y1="' + (CH-CB) + '" x2="' + (CW-CR) + '" y2="' + (CH-CB) + '"/>';
+  s += '<line class="axis" x1="' + CL + '" y1="' + CT + '" x2="' + CL + '" y2="' + (CH-CB) + '"/>';
+  s += '<text x="' + (CW-CR) + '" y="' + (CH-9) + '" text-anchor="end" style="font-size:8px">℃</text>';
+
+  specs.forEach(function(sp){
+    var pts = '';
+    for(var t = sp.tmin; t <= sp.tmax; t++){
+      var smp = sample(sp, t);
+      if(!smp) continue;
+      var val = metric === 'r' ? smp.r : smp.v;
+      var x = xPos(t, CXR_MIN, CXR_MAX);
+      var y = metric === 'r' ? yLog(val, ymin, ymax) : yLin(val, ymin, ymax);
+      pts += (pts ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    s += '<path class="series" d="' + pts + '" stroke="' + sp.color + '"/>';
+  });
+
+  // 当前检测点
+  var res = computeDiag();
+  if(res && res.kind === 'ok' && state.curveSpec !== 'all' && res.sp.key === state.curveSpec){
+    var mv = metric === 'r' ? res.r : res.v;
+    var mx = xPos(res.temp, CXR_MIN, CXR_MAX);
+    var my = metric === 'r' ? yLog(mv, ymin, ymax) : yLin(mv, ymin, ymax);
+    s += '<circle class="marker" cx="' + mx.toFixed(1) + '" cy="' + my.toFixed(1) + '" r="4.2" fill="' + SPEC[state.spec].color + '"/>';
+  }
+
+  // 十字线层
+  s += '<g id="xhairG" style="display:none">' +
+       '<line id="xhairLine" stroke="rgba(200,225,245,.35)" stroke-width="1" stroke-dasharray="3 3"/>' +
+       specs.map(function(sp,i){
+         return '<circle id="xh' + i + '" r="3.2" fill="' + sp.color + '" stroke="#061019" stroke-width="1.2" style="display:none"/>';
+       }).join('') +
+       '</g>';
+
+  svg = s;
+  var chart = $('curveChart');
+  chart.innerHTML = svg;
+
+  state.curveGeom = {
+    metric: metric, ymin: ymin, ymax: ymax, specs: specs, xmin: CXR_MIN, xmax: CXR_MAX
+  };
+
+  // legend
+  var lg = '';
+  specs.forEach(function(sp){
+    lg += '<span><i style="background:' + sp.color + '"></i>' + sp.label + '</span>';
+  });
+  $('curveLegend').innerHTML = lg;
+  $('curveNote').textContent = metric === 'r'
+    ? '纵轴为对数刻度；曲线越陡，温度误差对应的阻值误差越大。'
+    : '分压电压按 5V 供电计算，满量程 0–5V，常温附近曲线近似线性。';
+}
+
+function onCurveMove(ev){
+  var g = state.curveGeom;
+  if(!g) return;
+  var svg = $('curveChart');
+  var rect = svg.getBoundingClientRect();
+  if(!rect.width) return;
+  var vx = (ev.clientX - rect.left) / rect.width * CW;
+  var t = g.xmin + (vx - CL) / (CW - CL - CR) * (g.xmax - g.xmin);
+  t = clamp(t, g.xmin, g.xmax);
+  t = Math.round(t);
+
+  var x = xPos(t, g.xmin, g.xmax);
+  var line = $('xhairLine');
+  if(!line) return;
+  line.setAttribute('x1', x); line.setAttribute('x2', x);
+  line.setAttribute('y1', CT); line.setAttribute('y2', CH - CB);
+  $('xhairG').style.display = '';
+
+  var rows = '';
+  g.specs.forEach(function(sp, i){
+    var cir = $('xh' + i);
+    var smp = sample(sp, t);
+    if(!smp){
+      if(cir) cir.style.display = 'none';
+      return;
+    }
+    var val = g.metric === 'r' ? smp.r : smp.v;
+    var y = g.metric === 'r' ? yLog(val, g.ymin, g.ymax) : yLin(val, g.ymin, g.ymax);
+    if(cir){
+      cir.setAttribute('cx', x); cir.setAttribute('cy', y); cir.style.display = '';
+    }
+    rows += '<div class="row"><i style="background:' + sp.color + '"></i>' + sp.label + '<b>' +
+      (g.metric === 'r' ? fmtR(val) + ' kΩ' : fmtV(val) + ' V') + '</b></div>';
+  });
+
+  var tip = $('curveTip');
+  tip.innerHTML = '<div class="tt">' + t + ' ℃</div>' + rows;
+  tip.hidden = false;
+  var pct = clamp(x / CW * 100, 16, 84);
+  tip.style.left = pct + '%';
+}
+
+function onCurveLeave(){
+  var g = $('xhairG');
+  if(g) g.style.display = 'none';
+  var tip = $('curveTip');
+  if(tip) tip.hidden = true;
+}
+
+function renderKeyTable(){
+  var key = state.curveSpec === 'all' ? state.spec : state.curveSpec;
+  var sp = SPEC[key];
+  $('keyTableSpec').textContent = sp.label + '（' + sp.tmin + '~' + sp.tmax + '℃）';
+  var base = sample(sp, 25);
+  var baseR = base ? base.r : null;
+
+  var temps = [-30,-20,-10,0,10,20,25,30,40,50,60,70,80,90,100,110,120,130,140,150,160];
+  var rows = '';
+  temps.forEach(function(t){
+    var smp = sample(sp, t);
+    if(!smp) return;
+    var rel = baseR ? (smp.r / baseR) : null;
+    rows += '<tr><td>' + t + '</td><td class="num">' + fmtR(smp.r) + '</td><td class="num">' + fmtV(smp.v) + '</td><td class="num">' +
+      (rel ? rel.toFixed(2) + '×' : '—') + '</td></tr>';
+  });
+  $('keyTableBody').innerHTML = rows;
+}
+
+/* ---------------- refrigerant ---------------- */
+var KGF_MPA = 0.0980665;
+
+function curRef(){ return REFS[state.ref]; }
+function refBounds(rf){
+  var d = rf.data;
+  return {tmin:d[0][0], tmax:d[d.length-1][0], gmin:d[0][2], gmax:d[d.length-1][2]};
+}
+function refAtTemp(rf, t){
+  var d = rf.data;
+  if(t < d[0][0] || t > d[d.length-1][0]) return null;
+  var lo = 0, hi = d.length - 1;
+  while(hi - lo > 1){
+    var mid = (lo + hi) >> 1;
+    if(d[mid][0] <= t) lo = mid; else hi = mid;
+  }
+  if(lo === d.length - 1) return {abs:d[lo][1], gauge:d[lo][2]};
+  var a = d[lo], b = d[hi], f = (t - a[0]) / (b[0] - a[0]);
+  return {abs:a[1] + (b[1]-a[1]) * f, gauge:a[2] + (b[2]-a[2]) * f};
+}
+function tempFromPressure(rf, g){
+  var d = rf.data, abs = g + 1;
+  if(abs < d[0][1] || abs > d[d.length-1][1]) return null;
+  var lo = 0, hi = d.length - 1;
+  while(hi - lo > 1){
+    var mid = (lo + hi) >> 1;
+    if(d[mid][1] <= abs) lo = mid; else hi = mid;
+  }
+  var a = d[lo], b = d[hi];
+  if(b[1] === a[1]) return a[0];
+  return a[0] + (abs - a[1]) / (b[1] - a[1]) * (b[0] - a[0]);
+}
+function fmtP(v){
+  if(!isFinite(v)) return '—';
+  return String(parseFloat(v.toFixed(3)));
+}
+
+function renderRef(){
+  var rf = curRef(), b = refBounds(rf);
+  $('refRange').textContent = b.tmin + ' ~ ' + b.tmax + '℃ · ' + rf.data.length + ' 点';
+  $('refMeta').textContent = rf.meta;
+  $('refChartTitle').textContent = rf.name + ' 饱和曲线';
+  $('shRefTag').textContent = '按 ' + rf.name + ' 换算';
+
+  var m = state.refMode;
+  $('refInputLabel').textContent = m === 't' ? '饱和温度' : '表压';
+  $('refInputUnit').textContent = m === 't' ? '℃' : 'kgf/cm²';
+  $('refInputMain').placeholder = m === 't' ? '0.0' : '8.00';
+  $('refHint').textContent = m === 't'
+    ? '数据范围 ' + b.tmin + ' ~ ' + b.tmax + '℃'
+    : '可查表压 ' + fmtP(b.gmin) + ' ~ ' + fmtP(b.gmax) + ' kgf/cm²';
+
+  var box = $('refResult');
+  var raw = num(state.refValue);
+  state.refMarker = null;
+
+  if(raw === null){
+    box.innerHTML = '<div class="empty" style="padding:14px 4px 6px"><p style="font-size:12.5px">输入数值后自动换算</p><small>' + rf.name + ' · 表压 ' + fmtP(b.gmin) + ' ~ ' + fmtP(b.gmax) + ' kgf/cm²</small></div>';
+    renderRefCompare();
+    renderRefTable();
+    buildRefChart();
+    return;
+  }
+
+  var temp = null, gauge = null, abs = null;
+  if(m === 't'){
+    if(raw < b.tmin || raw > b.tmax){
+      box.innerHTML = '<div class="verdict warn"><div class="vt">温度超出本表范围</div><p>' + rf.name + ' 表覆盖 ' + b.tmin + ' ~ ' + b.tmax + '℃。' + rf.over + '</p></div>';
+      state.refMarker = null;
+      renderRefCompare();
+      renderRefTable();
+      buildRefChart();
+      return;
+    }
+    temp = raw;
+    var rr = refAtTemp(rf, raw);
+    gauge = rr.gauge; abs = rr.abs;
+  } else {
+    if(raw < b.gmin || raw > b.gmax){
+      box.innerHTML = '<div class="verdict warn"><div class="vt">表压超出本表范围</div><p>' + rf.name + ' 表表压覆盖 ' + fmtP(b.gmin) + ' ~ ' + fmtP(b.gmax) + ' kgf/cm²（绝对压力 ' + fmtP(b.gmin+1) + ' ~ ' + fmtP(b.gmax+1) + '）。' + rf.over + '</p></div>';
+      state.refMarker = null;
+      renderRefCompare();
+      renderRefTable();
+      buildRefChart();
+      return;
+    }
+    gauge = raw; abs = raw + 1;
+    temp = tempFromPressure(rf, raw);
+  }
+
+  var big = m === 't' ? gauge.toFixed(2) : fmtT(temp);
+  var unit = m === 't' ? 'kgf/cm²' : '℃';
+  var kicker = m === 't' ? '对应表压' : '对应饱和温度';
+
+  box.innerHTML = '<div class="hero" style="padding-top:8px">' +
+    '<span class="hero-kicker">' + kicker + '</span>' +
+    '<div class="hero-num">' + big + '<span class="u">' + unit + '</span></div>' +
+    '<div class="badge info" style="margin-top:8px"><span class="dot"></span>' + rf.name + '</div></div>' +
+    '<div class="stats" style="margin-top:12px">' +
+    '<div><span>绝对压力</span><b>' + abs.toFixed(2) + '<i>kgf</i></b></div>' +
+    '<div><span>绝对压力</span><b>' + (abs * KGF_MPA).toFixed(3) + '<i>MPa</i></b></div>' +
+    '<div><span>表压</span><b>' + (gauge * KGF_MPA).toFixed(3) + '<i>MPa</i></b></div>' +
+    '</div>';
+
+  if(state.ref === 'r410a'){
+    box.innerHTML += '<button class="sen-jump" type="button" data-sen-jump="' + gauge +
+      '"><span>查 R410A 传感器电压</span><span class="arw" aria-hidden="true">→</span></button>';
+  }
+
+  state.refMarker = temp;
+  renderRefCompare();
+  renderRefTable();
+  buildRefChart();
+}
+
+function buildRefChart(){
+  var rf = curRef(), d = rf.data, b = refBounds(rf);
+  var ymin = b.gmin < 0 ? Math.floor(b.gmin / 5) * 5 : 0;
+  var ymax = Math.ceil(b.gmax / 10) * 10;
+  if(ymax <= ymin) ymax = ymin + 10;
+  var xmin = b.tmin, xmax = b.tmax;
+  var xstep = (xmax - xmin) > 80 ? 20 : 10;
+  var s = '';
+
+  var ystep = (ymax - ymin) <= 25 ? 5 : 10;
+  var yticks = [];
+  for(var v0 = 0; v0 <= ymax + 1e-9; v0 += ystep) yticks.push(v0);
+  if(ymin < 0) yticks.unshift(ymin);
+  yticks.forEach(function(v){
+    var y = yLin(v, ymin, ymax);
+    s += '<line class="grid" x1="' + CL + '" y1="' + y.toFixed(1) + '" x2="' + (CW-CR) + '" y2="' + y.toFixed(1) + '"/>';
+    s += '<text x="' + (CL-6) + '" y="' + (y+3).toFixed(1) + '" text-anchor="end">' + v + '</text>';
+  });
+  for(var t = Math.ceil(xmin / xstep) * xstep; t <= xmax; t += xstep){
+    var x = xPos(t, xmin, xmax);
+    s += '<line class="grid" x1="' + x.toFixed(1) + '" y1="' + CT + '" x2="' + x.toFixed(1) + '" y2="' + (CH-CB) + '"/>';
+    s += '<text x="' + x.toFixed(1) + '" y="' + (CH-9) + '" text-anchor="middle">' + t + '</text>';
+  }
+  s += '<line class="axis" x1="' + CL + '" y1="' + (CH-CB) + '" x2="' + (CW-CR) + '" y2="' + (CH-CB) + '"/>';
+  s += '<line class="axis" x1="' + CL + '" y1="' + CT + '" x2="' + CL + '" y2="' + (CH-CB) + '"/>';
+
+  var pts = '';
+  d.forEach(function(row){
+    var px = xPos(row[0], xmin, xmax);
+    var py = yLin(row[2], ymin, ymax);
+    pts += (pts ? 'L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1);
+  });
+  s += '<path class="series" d="' + pts + '" stroke="' + rf.color + '"/>';
+
+  if(typeof state.refMarker === 'number' && isFinite(state.refMarker)){
+    var mt = state.refMarker;
+    if(mt >= xmin && mt <= xmax){
+      var mg = refAtTemp(rf, mt);
+      if(mg){
+        s += '<circle class="marker" cx="' + xPos(mt, xmin, xmax).toFixed(1) + '" cy="' + yLin(mg.gauge, ymin, ymax).toFixed(1) + '" r="4.2" fill="' + rf.color + '"/>';
+      }
+    }
+  }
+
+  s += '<g id="rxhairG" style="display:none">' +
+       '<line id="rxhairLine" stroke="rgba(200,225,245,.35)" stroke-width="1" stroke-dasharray="3 3"/>' +
+       '<circle id="rxhDot" r="3.2" fill="' + rf.color + '" stroke="#061019" stroke-width="1.2" style="display:none"/>' +
+       '</g>';
+
+  $('refChart').innerHTML = s;
+  state.refGeom = {xmin:xmin, xmax:xmax, ymin:ymin, ymax:ymax};
+}
+
+function onRefMove(ev){
+  var g = state.refGeom;
+  if(!g) return;
+  var svg = $('refChart');
+  var rect = svg.getBoundingClientRect();
+  if(!rect.width) return;
+  var vx = (ev.clientX - rect.left) / rect.width * CW;
+  var t = g.xmin + (vx - CL) / (CW - CL - CR) * (g.xmax - g.xmin);
+  t = clamp(t, g.xmin, g.xmax);
+  t = (g.xmax - g.xmin) > 80 ? Math.round(t * 2) / 2 : Math.round(t * 10) / 10;
+
+  var rf = curRef();
+  var r = refAtTemp(rf, t);
+  if(!r) return;
+  var x = xPos(t, g.xmin, g.xmax);
+  var y = yLin(r.gauge, g.ymin, g.ymax);
+
+  var line = $('rxhairLine');
+  if(!line) return;
+  line.setAttribute('x1', x); line.setAttribute('x2', x);
+  line.setAttribute('y1', CT); line.setAttribute('y2', CH - CB);
+  var dot = $('rxhDot');
+  dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.style.display = '';
+  $('rxhairG').style.display = '';
+
+  var tip = $('refTip');
+  tip.innerHTML = '<div class="tt">' + t + ' ℃</div>' +
+    '<div class="row">表压<b>' + r.gauge.toFixed(2) + ' kgf</b></div>' +
+    '<div class="row">绝对<b>' + r.abs.toFixed(2) + ' kgf</b></div>' +
+    '<div class="row">绝压<b>' + (r.abs * KGF_MPA).toFixed(3) + ' MPa</b></div>';
+  tip.hidden = false;
+  tip.style.left = clamp(x / CW * 100, 18, 82) + '%';
+}
+function onRefLeave(){
+  var g = $('rxhairG');
+  if(g) g.style.display = 'none';
+  var tip = $('refTip');
+  if(tip) tip.hidden = true;
+}
+
+function renderRefCompare(){
+  var m = state.refMode;
+  var raw = num(state.refValue);
+  var list = $('cmpList');
+  $('cmpTitle').textContent = m === 't' ? '同温度下四种冷媒' : '同表压下四种冷媒';
+  $('cmpHint').textContent = raw === null
+    ? '输入数值后显示对照'
+    : (m === 't' ? raw + '℃ 时的饱和表压' : fmtP(raw) + ' kgf/cm² 时的饱和温度');
+
+  var html = '';
+  REF_ORDER.forEach(function(k){
+    var rf = REFS[k], b = refBounds(rf);
+    var val = '—', cls = '';
+    if(raw !== null){
+      if(m === 't'){
+        var r = refAtTemp(rf, raw);
+        if(r){ val = r.gauge.toFixed(2) + '<i>kgf</i>'; }
+        else { val = '超范围'; cls = ' out'; }
+      } else {
+        var t = tempFromPressure(rf, raw);
+        if(t !== null){ val = t.toFixed(1) + '<i>℃</i>'; }
+        else { val = '超范围'; cls = ' out'; }
+      }
+    }
+    html += '<div class="cmp-row' + (k === state.ref ? ' on' : '') + '">' +
+      '<span class="cmp-dot" style="background:' + rf.color + '"></span>' +
+      '<span class="cmp-name">' + rf.name + '</span>' +
+      '<span class="cmp-sub">' + b.tmin + ' ~ ' + b.tmax + '℃</span>' +
+      '<span class="cmp-val' + cls + '">' + val + '</span></div>';
+  });
+  list.innerHTML = html;
+}
+
+function renderRefTable(){
+  var rf = curRef(), d = rf.data;
+  $('refTableCount').textContent = d.length + ' 点';
+  var raw = num(state.refValue);
+  var hi = -1, best = Infinity;
+
+  if(raw !== null){
+    var key = state.refMode === 't' ? 0 : 2;
+    for(var i = 0; i < d.length; i++){
+      var diff = Math.abs(d[i][key] - raw);
+      if(diff < best){ best = diff; hi = i; }
+    }
+  }
+
+  var rows = '';
+  for(var j = 0; j < d.length; j++){
+    rows += '<tr' + (j === hi ? ' class="on"' : '') + '>' +
+      '<td>' + d[j][0] + '</td>' +
+      '<td class="num">' + fmtP(d[j][2]) + '</td>' +
+      '<td class="num">' + (d[j][2] * KGF_MPA).toFixed(3) + '</td>' +
+      '<td class="num">' + fmtP(d[j][1]) + '</td></tr>';
+  }
+  $('refTableBody').innerHTML = rows;
+}
+
+function renderSuperheat(){
+  var rf = curRef(), b = refBounds(rf);
+  var p = num($('shP').value);
+  var t = num($('shT').value);
+  var out = $('shOut');
+  if(p === null || t === null){
+    out.textContent = '输入低压表压与回气温度，按 ' + rf.name + ' 算出蒸发温度与过热度。';
+    return;
+  }
+  var evap = tempFromPressure(rf, p);
+  if(evap === null){
+    out.innerHTML = '<span style="color:#ffc978">表压 ' + fmtP(p) + ' kgf/cm² 超出 ' + rf.name + ' 表范围（' + fmtP(b.gmin) + ' ~ ' + fmtP(b.gmax) + '），无法换算蒸发温度。</span>';
+    return;
+  }
+  var sh = t - evap;
+  var level = 'good', tag = '参考范围内';
+  if(sh < 5){ level = 'warn'; tag = '过热度偏低'; }
+  else if(sh > 10){ level = 'warn'; tag = '过热度偏高'; }
+
+  out.innerHTML = rf.name + ' 蒸发温度 <b>' + fmtT(evap) + ' ℃</b>　·　过热度 <b>' + sh.toFixed(1) + ' K</b>' +
+    '<div class="verdict ' + level + '" style="margin-top:9px"><div class="vt">' + tag + '</div>' +
+    '<p>常见参考区间 5–10 K（以厂家规范为准）。偏低多见于冷媒过量、膨胀阀开度过大；偏高多见于冷媒不足、管路压损或膨胀阀堵塞。</p></div>';
+}
+
+/* ---------------- records ---------------- */
+var REC_KEY = 'hvac_diag_records_v1';
+function loadRecords(){
+  try{
+    var raw = localStorage.getItem(REC_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(arr)) return [];
+    return arr.filter(function(r){ return r && typeof r === 'object'; }).slice(0,100);
+  }catch(e){ return []; }
+}
+function persistRecords(){
+  try{
+    localStorage.setItem(REC_KEY, JSON.stringify(state.records));
+    return true;
+  }catch(e){ return false; }
+}
+function addRecord(){
+  var res = computeDiag();
+  if(!res || res.kind !== 'ok') return;
+  var rec = {
+    id: 'r' + Date.now() + Math.floor(Math.random()*1000),
+    ts: Date.now(),
+    spec: state.spec,
+    mode: state.mode,
+    temp: res.temp,
+    r: res.r,
+    v: res.v
+  };
+  state.records.unshift(rec);
+  if(state.records.length > 100) state.records = state.records.slice(0,100);
+  persistRecords();
+  renderRecords();
+  var btn = $('saveBtn');
+  if(btn){
+    btn.textContent = '已记录 ✓';
+    btn.disabled = true;
+    setTimeout(function(){
+      if(!btn) return;
+      btn.textContent = '记录本次';
+      btn.disabled = false;
+    }, 1400);
+  }
+}
+function delRecord(id){
+  state.records = state.records.filter(function(r){ return r.id !== id; });
+  persistRecords();
+  renderRecords();
+}
+function fmtTime(ts){
+  var d = new Date(ts);
+  function p(n){ return n < 10 ? '0'+n : ''+n; }
+  return p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function renderRecords(){
+  var list = $('recList');
+  $('recCount').textContent = state.records.length + ' 条';
+  $('recFoot').hidden = state.records.length === 0;
+
+  if(!state.records.length){
+    list.innerHTML = '<div class="rec-empty"><b>还没有记录</b>在检测页算出结果后，点「记录本次」即可保存</div>';
+    return;
+  }
+  var html = '';
+  state.records.forEach(function(r){
+    var sp = SPEC[r.spec] || SPEC['15k'];
+    var input = r.mode === 't' ? (fmtT(r.temp) + ' ℃') : (r.mode === 'r' ? (fmtR(r.r) + ' kΩ') : (fmtV(r.v) + ' V'));
+    var conv = r.mode === 't' ? (fmtR(r.r) + ' kΩ') : (fmtT(r.temp) + ' ℃');
+    html += '<div class="rec">' +
+      '<span class="rec-badge" style="color:' + sp.color + '">' + sp.label + '</span>' +
+      '<div class="rec-main">' +
+        '<div class="r1">' + input + '<em>→</em>' + conv + '</div>' +
+        '<div class="r2">' + MODE_LABEL[r.mode] + ' · ' + fmtTime(r.ts) + '</div>' +
+      '</div>' +
+      '<button class="rec-del" data-id="' + r.id + '" aria-label="删除这条记录">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>' +
+      '</button></div>';
+  });
+  list.innerHTML = html;
+}
+
+
+/* ---------------- environment ---------------- */
+var ENV_KEY = 'hvac.env.v2';
+var ENV_TTL = 15 * 60 * 1000;
+var ENV_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+
+function envHasTemp(){
+  var t = state.env.temp;
+  return t !== null && t !== undefined && isFinite(t);
+}
+function envRound(n, d){
+  var p = Math.pow(10, d);
+  return Math.round(n * p) / p;
+}
+function wmoText(c){
+  if(c === null || c === undefined) return '天气未知';
+  if(c === 0) return '晴';
+  if(c === 1) return '晴间少云';
+  if(c === 2) return '多云';
+  if(c === 3) return '阴';
+  if(c === 45 || c === 48) return '有雾';
+  if(c >= 51 && c <= 57) return '毛毛雨';
+  if(c >= 61 && c <= 67) return '降雨';
+  if(c >= 71 && c <= 77) return '降雪';
+  if(c >= 80 && c <= 82) return '阵雨';
+  if(c >= 85 && c <= 86) return '阵雪';
+  if(c === 95) return '雷阵雨';
+  if(c === 96 || c === 99) return '雷暴伴冰雹';
+  return '天气未知';
+}
+function wmoGroup(c){
+  if(c === null || c === undefined) return 'cloud';
+  if(c <= 1) return 'sun';
+  if(c <= 3) return 'cloud';
+  if(c <= 48) return 'fog';
+  if(c >= 51 && c <= 67) return 'rain';
+  if(c >= 71 && c <= 77) return 'snow';
+  if(c >= 80 && c <= 82) return 'rain';
+  if(c >= 85 && c <= 86) return 'snow';
+  if(c >= 95) return 'storm';
+  return 'cloud';
+}
+function weatherIcon(code, isDay){
+  var g = wmoGroup(code);
+  var open = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  if(g === 'sun'){
+    if(isDay === 0){
+      return open + '<path d="M20.2 14.6A8.2 8.2 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z"/></svg>';
+    }
+    return open + '<circle cx="12" cy="12" r="4"/><path d="M12 3.2v2M12 18.8v2M3.2 12h2M18.8 12h2M5.9 5.9l1.4 1.4M16.7 16.7l1.4 1.4M18.1 5.9l-1.4 1.4M7.3 16.7l-1.4 1.4"/></svg>';
+  }
+  if(g === 'fog'){
+    return open + '<path d="M4 9h16M4 13h16M6.5 17h11"/></svg>';
+  }
+  var cloud = '<path d="M7.2 17.6h9.3a3.4 3.4 0 0 0 .5-6.76A5.4 5.4 0 0 0 6.6 9.6a4.1 4.1 0 0 0 .6 8z"/>';
+  if(g === 'cloud') return open + cloud + '</svg>';
+  if(g === 'rain') return open + cloud + '<path d="M8.6 19.2l-.9 2.1M12.2 19.2l-.9 2.1M15.8 19.2l-.9 2.1"/></svg>';
+  if(g === 'snow') return open + cloud + '<path d="M8.6 20.4h.01M12.2 21.4h.01M15.8 20.4h.01"/></svg>';
+  return open + cloud + '<path d="M12.8 18.6l-1.9 3.3h2.6L11.9 25"/></svg>';
+}
+
+function renderEnv(){
+  var hero = $('envHero');
+  if(!hero) return;
+  var e = state.env;
+  var has = envHasTemp();
+  var html = '';
+
+  if(!has){
+    if(e.phase === 'locating'){
+      html = '<div class="env-top"><div class="env-status"><span class="led pulse"></span>正在申请定位权限</div></div>' +
+        '<h3 class="env-title">读取当地实时气温</h3>' +
+        '<p class="env-lead">允许定位后自动获取当前位置的当前气温。位置只用于查询天气，不上传、不保存到服务器。</p>' +
+        '<div class="env-actions"><button class="btn ghost" data-env-act="manual">先手动输入</button></div>';
+    } else if(e.phase === 'error'){
+      html = '<div class="env-top"><div class="env-status"><span class="led warn"></span>未获取气温</div></div>' +
+        '<h3 class="env-title">' + (e.error || '定位失败') + '</h3>' +
+        '<p class="env-lead">可重新授权定位，或改用手动方式。嵌入页面可能限制定位权限；手动输入后全部参数照常计算。</p>' +
+        '<div class="env-actions"><button class="btn primary" data-env-act="locate">重新定位</button>' +
+        '<button class="btn ghost" data-env-act="manual">手动输入</button></div>';
+    } else {
+      html = '<div class="env-top"><div class="env-status"><span class="led"></span>尚未获取气温</div></div>' +
+        '<h3 class="env-title">授权定位，自动填入当前气温</h3>' +
+        '<p class="env-lead">读取当地实时气温后，直接换算出三种感温包标准值与四种冷媒饱和参数。</p>' +
+        '<div class="env-actions"><button class="btn primary" data-env-act="locate">允许定位</button>' +
+        '<button class="btn ghost" data-env-act="manual">手动输入</button></div>';
+    }
+    hero.innerHTML = html;
+    return;
+  }
+
+  var isManual = e.source === 'manual';
+  var badge = e.source === 'geo' ? '定位' : (e.source === 'city' ? '城市' : '手动');
+  var badgeCls = isManual ? 'env-badge manual' : 'env-badge';
+  var placeTxt = isManual ? '手动指定' : (e.place || '当前位置');
+  var cond, icon = '';
+  if(isManual){
+    cond = '<b>非实时观测</b>按输入值换算';
+  } else {
+    icon = '<span class="env-icon">' + weatherIcon(e.code, e.isDay) + '</span>';
+    cond = '<b>' + wmoText(e.code) + '</b>' + (e.feels !== null && e.feels !== undefined ? '体感 ' + e.feels.toFixed(1) + '℃' : '');
+  }
+
+  var hum = (e.humidity !== null && e.humidity !== undefined) ? Math.round(e.humidity) + '%' : '—';
+  var hi = (e.tmax !== null && e.tmax !== undefined) ? e.tmax.toFixed(1) + '℃' : '—';
+  var lo = (e.tmin !== null && e.tmin !== undefined) ? e.tmin.toFixed(1) + '℃' : '—';
+  var srcTxt = isManual ? '手动输入 · 不联网' : 'Open-Meteo' + (e.obs ? ' · ' + e.obs + ' 观测' : '');
+  if(e.phase === 'loading') srcTxt = '正在刷新气温…';
+
+  var warn = '';
+  if(e.phase === 'loading'){
+    warn = '';
+  } else if(e.error){
+    warn = '<div class="env-warn">' + e.error + '，当前显示的是上次结果。</div>';
+  } else if(e.stale){
+    warn = '<div class="env-warn">已超过 15 分钟未更新，点「刷新」获取最新气温。</div>';
+  }
+
+  html = '<div class="env-top">' +
+      '<div class="env-place">' + ENV_PIN + '<span class="pname">' + placeTxt + '</span>' +
+      '<span class="' + badgeCls + '">' + badge + '</span></div>' +
+      (e.phase === 'loading' ? '<div class="env-status"><span class="led pulse"></span>刷新中</div>' : '') +
+    '</div>' +
+    '<div class="env-main">' +
+      '<div class="env-temp">' + e.temp.toFixed(1) + '<span class="u">℃</span></div>' +
+      '<div class="env-side">' + icon + '<div class="env-cond">' + cond + '</div></div>' +
+    '</div>' +
+    warn +
+    '<div class="env-stats">' +
+      '<div><span>湿度</span><b>' + hum + '</b></div>' +
+      '<div><span>今日最高</span><b>' + hi + '</b></div>' +
+      '<div><span>今日最低</span><b>' + lo + '</b></div>' +
+    '</div>' +
+    '<div class="env-foot"><span class="env-src">' + srcTxt + '</span>' +
+      '<button class="env-link" data-env-act="refresh">' + (isManual ? '修改' : '刷新') + '</button>' +
+      '<button class="env-link" data-env-act="manual">手动</button>' +
+      (e.source === 'geo' ? '<button class="env-link" data-env-act="locate">重新定位</button>' : '') +
+    '</div>';
+
+  hero.innerHTML = html;
+}
+
+function renderEnvParams(){
+  var t = envHasTemp() ? state.env.temp : null;
+  var ntcBody = $('envNtcBody'), refBody = $('envRefBody');
+  var useBtn = $('envUseRef');
+  if(!ntcBody || !refBody) return;
+
+  if(t === null){
+    ntcBody.innerHTML = '<tr><td colspan="4" class="env-cell-empty">获取气温后自动换算</td></tr>';
+    refBody.innerHTML = '<tr><td colspan="4" class="env-cell-empty">获取气温后自动换算</td></tr>';
+    $('envNtcMeta').textContent = '—';
+    $('envRefMeta').textContent = '—';
+    if(useBtn) useBtn.disabled = true;
+    syncEnvChip(false);
+    return;
+  }
+
+  $('envNtcMeta').textContent = fmtT(t) + '℃ · 5V 分压';
+  $('envRefMeta').textContent = fmtT(t) + '℃ · kgf/cm²';
+
+  var rows = '';
+  SPECS.forEach(function(sp){
+    var smp = sample(sp, t);
+    var base = sample(sp, 25);
+    var on = sp.key === state.spec ? ' class="on"' : '';
+    if(!smp){
+      rows += '<tr' + on + '><td>' + sp.label + '</td><td class="num" colspan="3">超出 ' + sp.tmin + '~' + sp.tmax + '℃</td></tr>';
+      return;
+    }
+    var rel = base ? smp.r / base.r : null;
+    rows += '<tr' + on + '><td>' + sp.label + '</td><td class="num">' + fmtR(smp.r) + '</td>' +
+      '<td class="num">' + fmtV(smp.v) + '</td><td class="num">' + (rel ? rel.toFixed(2) + '×' : '—') + '</td></tr>';
+  });
+  ntcBody.innerHTML = rows;
+
+  var rrows = '';
+  REF_ORDER.forEach(function(k){
+    var rf = REFS[k];
+    var b = refBounds(rf);
+    var p = refAtTemp(rf, t);
+    var on = k === state.ref ? ' class="on"' : '';
+    if(!p){
+      rrows += '<tr data-env-ref="' + k + '"' + on + '><td>' + rf.name + '</td><td class="num" colspan="3">超出 ' + b.tmin + '~' + b.tmax + '℃</td></tr>';
+      return;
+    }
+    rrows += '<tr data-env-ref="' + k + '"' + on + '><td>' + rf.name + '</td>' +
+      '<td class="num">' + p.gauge.toFixed(2) + '</td>' +
+      '<td class="num">' + (p.gauge * KGF_MPA).toFixed(3) + '</td>' +
+      '<td class="num">' + p.abs.toFixed(2) + '</td></tr>';
+  });
+  refBody.innerHTML = rrows;
+
+  var tip = $('envNtcTip');
+  if(tip){
+    var okDash = (t >= -30 && t <= 150);
+    tip.textContent = okDash
+      ? '按 5V 供电与对应分压电阻计算，可与实测值逐一比对；高亮行为当前检测规格。'
+      : '当前气温超出部分规格量程，超出项以「超出范围」标注。';
+  }
+  if(useBtn) useBtn.disabled = false;
+  syncEnvChip(true);
+}
+
+function syncEnvChip(on){
+  var chip = $('useEnvRef');
+  if(!chip) return;
+  if(!on || !envHasTemp()){
+    chip.hidden = true;
+    return;
+  }
+  chip.hidden = false;
+  chip.textContent = '取环境 ' + fmtT(state.env.temp) + '℃';
+}
+
+function envOpenManual(expand){
+  var card = $('envManualCard');
+  if(!card) return;
+  card.hidden = false;
+  if(expand){
+    try{ card.scrollIntoView({block:'nearest', behavior:'smooth'}); }catch(err){}
+  }
+}
+function envCloseManual(){
+  var card = $('envManualCard');
+  if(card) card.hidden = true;
+}
+
+function envSave(){
+  try{
+    var e = state.env;
+    localStorage.setItem(ENV_KEY, JSON.stringify({
+      temp:e.temp, feels:e.feels, humidity:e.humidity, code:e.code, isDay:e.isDay,
+      tmax:e.tmax, tmin:e.tmin, place:e.place, source:e.source, obs:e.obs,
+      fetchedAt:e.fetchedAt, lat:e.lat, lon:e.lon
+    }));
+  }catch(err){}
+}
+function envLoad(){
+  try{
+    var raw = localStorage.getItem(ENV_KEY);
+    if(!raw) return;
+    var o = JSON.parse(raw);
+    if(!o || typeof o !== 'object' || typeof o.temp !== 'number' || !isFinite(o.temp)) return;
+    var e = state.env;
+    e.temp = o.temp;
+    e.feels = typeof o.feels === 'number' ? o.feels : null;
+    e.humidity = typeof o.humidity === 'number' ? o.humidity : null;
+    e.code = typeof o.code === 'number' ? o.code : null;
+    e.isDay = o.isDay === 0 ? 0 : 1;
+    e.tmax = typeof o.tmax === 'number' ? o.tmax : null;
+    e.tmin = typeof o.tmin === 'number' ? o.tmin : null;
+    e.place = typeof o.place === 'string' ? o.place : '';
+    e.source = typeof o.source === 'string' ? o.source : 'manual';
+    e.obs = typeof o.obs === 'string' ? o.obs : '';
+    e.fetchedAt = typeof o.fetchedAt === 'number' ? o.fetchedAt : 0;
+    e.lat = typeof o.lat === 'number' ? o.lat : null;
+    e.lon = typeof o.lon === 'number' ? o.lon : null;
+    e.phase = 'ready';
+    e.stale = e.source !== 'manual' && (Date.now() - e.fetchedAt) > ENV_TTL;
+  }catch(err){}
+}
+
+function envLocate(){
+  var e = state.env;
+  if(!navigator.geolocation){
+    e.phase = 'error';
+    e.error = '此浏览器不支持定位';
+    renderEnv();
+    return;
+  }
+  e.phase = 'locating';
+  e.error = '';
+  renderEnv();
+  try{
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var lat = envRound(pos.coords.latitude, 2);
+      var lon = envRound(pos.coords.longitude, 2);
+      e.lat = lat; e.lon = lon;
+      if(!e.place || e.source !== 'geo') e.place = '当前位置';
+      envFetch(lat, lon, e.place, 'geo');
+      envReverse(lat, lon);
+    }, function(err){
+      var msg = (err && err.code === 1) ? '定位权限未开启'
+        : (err && err.code === 3 ? '定位超时' : '暂时无法获取位置');
+      e.phase = 'error';
+      e.error = msg;
+      renderEnv();
+    }, {enableHighAccuracy:false, timeout:10000, maximumAge:300000});
+  }catch(err){
+    e.phase = 'error';
+    e.error = '定位调用失败';
+    renderEnv();
+  }
+}
+
+function envFetch(lat, lon, place, source){
+  var e = state.env;
+  if(!isFinite(lat) || !isFinite(lon)) return;
+  e.phase = 'loading';
+  e.error = '';
+  renderEnv();
+
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+    '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,is_day' +
+    '&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1';
+
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = setTimeout(function(){ if(ctrl){ try{ ctrl.abort(); }catch(err){} } }, 12000);
+
+  fetch(url, ctrl ? {signal:ctrl.signal, cache:'no-store'} : {cache:'no-store'})
+    .then(function(res){
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(d){
+      clearTimeout(timer);
+      var c = (d && d.current) || {};
+      if(typeof c.temperature_2m !== 'number') throw new Error('bad payload');
+      e.temp = c.temperature_2m;
+      e.feels = typeof c.apparent_temperature === 'number' ? c.apparent_temperature : null;
+      e.humidity = typeof c.relative_humidity_2m === 'number' ? c.relative_humidity_2m : null;
+      e.code = typeof c.weather_code === 'number' ? c.weather_code : null;
+      e.isDay = c.is_day === 0 ? 0 : 1;
+      var dd = (d && d.daily) || {};
+      e.tmax = (dd.temperature_2m_max && typeof dd.temperature_2m_max[0] === 'number') ? dd.temperature_2m_max[0] : null;
+      e.tmin = (dd.temperature_2m_min && typeof dd.temperature_2m_min[0] === 'number') ? dd.temperature_2m_min[0] : null;
+      e.obs = c.time ? String(c.time).slice(11, 16) : '';
+      e.fetchedAt = Date.now();
+      e.stale = false;
+      e.lat = lat;
+      e.lon = lon;
+      if(place) e.place = place;
+      e.source = source;
+      e.phase = 'ready';
+      envSave();
+      renderEnv();
+      renderEnvParams();
+    })
+    .catch(function(){
+      clearTimeout(timer);
+      e.error = '气温获取失败，请检查网络';
+      if(envHasTemp()){
+        e.phase = 'ready';
+        e.stale = true;
+      } else {
+        e.phase = 'error';
+      }
+      renderEnv();
+      renderEnvParams();
+    });
+}
+
+function envReverse(lat, lon){
+  fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat +
+        '&longitude=' + lon + '&localityLanguage=zh')
+    .then(function(res){ return res.json(); })
+    .then(function(d){
+      if(!d || state.env.source !== 'geo' || state.env.lat !== lat) return;
+      var city = d.city || d.principalSubdivision || '';
+      var area = d.locality || '';
+      var name = city && area && area !== city ? city + ' ' + area : (city || area);
+      if(!name) return;
+      state.env.place = name;
+      envSave();
+      renderEnv();
+    })
+    .catch(function(){});
+}
+
+function envSearchCity(){
+  var input = $('cityInput');
+  var hint = $('envManualHint');
+  if(!input || !hint) return;
+  var q = input.value.trim();
+  if(!q){
+    hint.textContent = '请输入城市名，如 深圳';
+    return;
+  }
+  hint.textContent = '正在查询 ' + q + '…';
+  fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(q) +
+        '&count=1&language=zh&format=json')
+    .then(function(res){ return res.json(); })
+    .then(function(d){
+      var r = d && d.results && d.results[0];
+      if(!r){
+        hint.textContent = '未找到「' + q + '」，换个名称试试';
+        return;
+      }
+      var label = r.name + (r.admin1 && r.admin1 !== r.name ? ' · ' + r.admin1 : '');
+      var lat = envRound(r.latitude, 2);
+      var lon = envRound(r.longitude, 2);
+      hint.textContent = '已选定 ' + label;
+      envCloseManual();
+      envFetch(lat, lon, label, 'city');
+    })
+    .catch(function(){
+      hint.textContent = '城市查询失败，请检查网络';
+    });
+}
+
+function envUseManualTemp(){
+  var input = $('envTempInput');
+  var hint = $('envManualHint');
+  if(!input || !hint) return;
+  var v = num(input.value);
+  if(v === null || v < -60 || v > 80){
+    hint.textContent = '请输入 -60 ~ 80 之间的气温';
+    return;
+  }
+  var e = state.env;
+  e.temp = v;
+  e.feels = null;
+  e.humidity = null;
+  e.code = null;
+  e.isDay = 1;
+  e.tmax = null;
+  e.tmin = null;
+  e.obs = '';
+  e.place = '手动输入';
+  e.source = 'manual';
+  e.fetchedAt = Date.now();
+  e.stale = false;
+  e.error = '';
+  e.lat = null;
+  e.lon = null;
+  e.phase = 'ready';
+  envSave();
+  envCloseManual();
+  renderEnv();
+  renderEnvParams();
+}
+
+function envRefresh(){
+  var e = state.env;
+  if(e.source === 'manual' || !isFinite(e.lat) || !isFinite(e.lon)){
+    envOpenManual(true);
+    return;
+  }
+  envFetch(e.lat, e.lon, e.place, e.source);
+}
+
+function envMaybeRefresh(){
+  var e = state.env;
+  if(e.phase !== 'ready' || e.source === 'manual' || !isFinite(e.lat)) return;
+  if(Date.now() - e.fetchedAt > ENV_TTL) envFetch(e.lat, e.lon, e.place, e.source);
+}
+
+function flashEnvRef(){
+  var inp = $('refInput');
+  if(!inp) return;
+  var row = inp.parentNode;
+  if(!row) return;
+  try{ row.scrollIntoView({block:'center', behavior:'smooth'}); }catch(err){}
+  row.classList.remove('flash');
+  void row.offsetWidth;
+  row.classList.add('flash');
+  setTimeout(function(){ row.classList.remove('flash'); }, 1400);
+}
+
+function useEnvAsRef(){
+  if(!envHasTemp()) return;
+  state.refTemp = state.env.temp.toFixed(1);
+  var inp = $('refInput');
+  if(inp) inp.value = state.refTemp;
+  renderResult();
+  switchTab('diag');
+  setTimeout(flashEnvRef, 80);
+}
+
+function useEnvAsRefrigerant(k){
+  if(!envHasTemp() || !REFS[k]) return;
+  var temp = state.env.temp.toFixed(1);
+
+  state.ref = k;
+  var seg = $('refSeg');
+  if(seg){
+    seg.querySelectorAll('button[data-ref]').forEach(function(b){
+      var on = b.getAttribute('data-ref') === k;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  state.refMode = 't';
+  var mseg = $('refModeSeg');
+  if(mseg){
+    mseg.querySelectorAll('button[data-rmode]').forEach(function(b){
+      var on = b.getAttribute('data-rmode') === 't';
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  state.refValue = temp;
+  var inp = $('refInputMain');
+  if(inp) inp.value = temp;
+  renderRef();
+  renderSuperheat();
+  switchTab('ref');
+}
+
+function initEnv(){
+  envLoad();
+  renderEnv();
+  renderEnvParams();
+  if(!envHasTemp()){
+    setTimeout(function(){
+      if(state.env.phase === 'idle') envLocate();
+    }, 700);
+  } else if(state.env.stale && state.env.source !== 'manual' && isFinite(state.env.lat)){
+    setTimeout(function(){
+      if(state.env.phase === 'ready') envFetch(state.env.lat, state.env.lon, state.env.place, state.env.source);
+    }, 900);
+  }
+}
+
+/* ---------------- pressure sensors (R410A) ---------------- */
+var ATM_KPA = 101.325;
+var SENSORS = {
+  high:{key:'high', label:'高压传感器', side:'高压侧', color:'#5b9dff', data:[[-40,176,0.102],[-39,184,0.111],[-38,193,0.12],[-37,202,0.13],[-36,211,0.139],[-35,220,0.149],[-34,230,0.16],[-33,240,0.17],[-32,250,0.181],[-31,261,0.193],[-30,273,0.206],[-29,283,0.216],[-28,295,0.229],[-27,307,0.242],[-26,319,0.255],[-25,332,0.268],[-24,345,0.282],[-23,359,0.297],[-22,373,0.312],[-21,388,0.328],[-20,403,0.344],[-19,418,0.36],[-18,434,0.377],[-17,450,0.394],[-16,467,0.412],[-15,484,0.43],[-14,502,0.45],[-13,520,0.469],[-12,538,0.488],[-11,558,0.509],[-10,577,0.53],[-9,597,0.551],[-8,618,0.573],[-7,639,0.596],[-6,661,0.619],[-5,684,0.644],[-4,707,0.668],[-3,730,0.693],[-2,754,0.718],[-1,779,0.745],[0,804,0.772],[1,830,0.799],[2,857,0.828],[3,884,0.857],[4,912,0.887],[5,940,0.917],[6,969,0.947],[7,999,0.979],[8,1030,1.012],[9,1061,1.046],[10,1093,1.08],[11,1125,1.114],[12,1159,1.15],[13,1193,1.186],[14,1228,1.224],[15,1263,1.261],[16,1300,1.3],[17,1337,1.34],[18,1375,1.38],[19,1413,1.421],[20,1453,1.463],[21,1493,1.506],[22,1535,1.551],[23,1577,1.596],[24,1620,1.641],[25,1664,1.688],[26,1708,1.735],[27,1754,1.784],[28,1801,1.834],[29,1848,1.884],[30,1897,1.937],[31,1946,1.989],[32,1996,2.042],[33,2048,2.098],[34,2100,2.153],[35,2153,2.21],[36,2208,2.268],[37,2263,2.327],[38,2320,2.388],[39,2377,2.448],[40,2436,2.511],[41,2495,2.574],[42,2556,2.639],[43,2618,2.705],[44,2681,2.772],[45,2745,2.841],[46,2810,2.91],[47,2876,2.98],[48,2944,3.053],[49,3013,3.126],[50,3083,3.201],[51,3154,3.277],[52,3226,3.353],[53,3300,3.432],[54,3374,3.511],[55,3450,3.592],[56,3528,3.675],[57,3606,3.759],[58,3686,3.844],[59,3767,3.93],[60,3849,4.018],[61,3932,4.106],[62,4017,4.197],[63,4103,4.288],[64,4190,4.381],[65,4278,4.475],[66,4367,4.57],[67,4457,4.666],[68,4548,4.763],[69,4639,4.86],[70,4731,4.958],[71,4893,5.13]]},
+  low:{key:'low', label:'低压传感器', side:'低压侧', color:'#25e0c0', data:[[-70,36,0.369],[-69,38,0.373],[-68,40,0.377],[-67,43,0.383],[-66,46,0.389],[-65,48,0.393],[-64,51,0.399],[-63,54,0.405],[-62,57,0.411],[-61,61,0.419],[-60,64,0.425],[-59,68,0.433],[-58,72,0.441],[-57,76,0.449],[-56,80,0.457],[-55,84,0.465],[-54,89,0.475],[-53,94,0.485],[-52,99,0.495],[-51,104,0.505],[-50,109,0.515],[-49,115,0.527],[-48,121,0.539],[-47,127,0.551],[-46,133,0.563],[-45,140,0.577],[-44,146,0.589],[-43,154,0.605],[-42,161,0.619],[-41,168,0.633],[-40,176,0.649],[-39,184,0.665],[-38,193,0.683],[-37,202,0.701],[-36,211,0.719],[-35,220,0.737],[-34,230,0.757],[-33,240,0.777],[-32,250,0.797],[-31,261,0.819],[-30,272,0.841],[-29,283,0.863],[-28,295,0.887],[-27,307,0.911],[-26,319,0.935],[-25,332,0.961],[-24,345,0.987],[-23,359,1.015],[-22,373,1.043],[-21,388,1.073],[-20,403,1.103],[-19,418,1.133],[-18,434,1.165],[-17,450,1.197],[-16,467,1.231],[-15,484,1.265],[-14,502,1.301],[-13,520,1.337],[-12,538,1.373],[-11,558,1.413],[-10,577,1.451],[-9,597,1.491],[-8,618,1.533],[-7,639,1.575],[-6,661,1.619],[-5,684,1.665],[-4,707,1.711],[-3,730,1.757],[-2,754,1.805],[-1,779,1.855],[0,804,1.905],[1,830,1.957],[2,857,2.011],[3,884,2.065],[4,912,2.121],[5,940,2.177],[6,969,2.235],[7,999,2.295],[8,1030,2.357],[9,1061,2.419],[10,1096,2.489],[11,1125,2.547],[12,1159,2.615],[13,1193,2.683],[14,1228,2.753],[15,1263,2.823],[16,1300,2.897],[17,1337,2.971],[18,1375,3.047],[19,1413,3.123],[20,1453,3.203],[21,1493,3.283],[22,1535,3.367],[23,1577,3.451],[24,1620,3.537],[25,1664,3.625],[26,1708,3.713],[27,1754,3.805],[28,1801,3.899],[29,1848,3.993],[30,1897,4.091],[31,1946,4.189],[32,1996,4.289],[33,2048,4.393],[34,2100,4.497],[35,2153,4.603],[36,2208,4.713],[37,2263,4.823],[38,2320,4.937],[39,2377,5.051],[40,2439,5.175]]}
+};
+var SEN_MODE = {
+  v:{label:'信号电压', opt:'信号线对地', unit:'V', ph:'2.500'},
+  p:{label:'表压', opt:'压力表读数', unit:'MPa', ph:'1.500'},
+  t:{label:'饱和温度', opt:'对应饱和温度', unit:'℃', ph:'25.0'}
+};
+
+function curSensor(){ return SENSORS[state.sensor.type]; }
+function sensorBounds(sn){
+  var d = sn.data;
+  return {tmin:d[0][0], tmax:d[d.length-1][0], pmin:d[0][1], pmax:d[d.length-1][1], vmin:d[0][2], vmax:d[d.length-1][2]};
+}
+function sensorAtTemp(sn, t){
+  var d = sn.data;
+  if(t < d[0][0] || t > d[d.length-1][0]) return null;
+  var lo = 0, hi = d.length - 1;
+  while(hi - lo > 1){
+    var mid = (lo + hi) >> 1;
+    if(d[mid][0] <= t) lo = mid; else hi = mid;
+  }
+  var a = d[lo], b = d[hi];
+  if(t === a[0] || b[0] === a[0]) return {t:a[0], abs:a[1], v:a[2]};
+  var f = (t - a[0]) / (b[0] - a[0]);
+  return {t:t, abs:a[1] + (b[1]-a[1]) * f, v:a[2] + (b[2]-a[2]) * f};
+}
+function sensorTempFromV(sn, v){
+  var d = sn.data, lo = 0, hi = d.length - 1;
+  if(v < d[0][2] || v > d[hi][2]) return null;
+  while(hi - lo > 1){
+    var mid = (lo + hi) >> 1;
+    if(d[mid][2] <= v) lo = mid; else hi = mid;
+  }
+  var a = d[lo], b = d[hi];
+  if(b[2] === a[2]) return a[0];
+  return a[0] + (v - a[2]) / (b[2] - a[2]) * (b[0] - a[0]);
+}
+function sensorTempFromAbs(sn, abs){
+  var d = sn.data, lo = 0, hi = d.length - 1;
+  if(abs < d[0][1] || abs > d[hi][1]) return null;
+  while(hi - lo > 1){
+    var mid = (lo + hi) >> 1;
+    if(d[mid][1] <= abs) lo = mid; else hi = mid;
+  }
+  var a = d[lo], b = d[hi];
+  if(b[1] === a[1]) return a[0];
+  return a[0] + (abs - a[1]) / (b[1] - a[1]) * (b[0] - a[0]);
+}
+function sensorCalc(sn, mode, raw){
+  var b = sensorBounds(sn);
+  if(mode === 'v'){
+    if(raw < b.vmin || raw > b.vmax) return {ok:false, err:'v'};
+    var t = sensorTempFromV(sn, raw);
+    if(t === null) return {ok:false, err:'v'};
+    var r = sensorAtTemp(sn, t);
+    return {ok:true, t:t, abs:r.abs, v:raw};
+  }
+  if(mode === 'p'){
+    var abs = raw * 1000 + ATM_KPA;
+    if(abs < b.pmin || abs > b.pmax) return {ok:false, err:'p'};
+    var t2 = sensorTempFromAbs(sn, abs);
+    if(t2 === null) return {ok:false, err:'p'};
+    var r2 = sensorAtTemp(sn, t2);
+    return {ok:true, t:t2, abs:abs, v:r2.v};
+  }
+  if(raw < b.tmin || raw > b.tmax) return {ok:false, err:'t'};
+  var r3 = sensorAtTemp(sn, raw);
+  return {ok:true, t:raw, abs:r3.abs, v:r3.v};
+}
+function senGauge(abs){ return (abs - ATM_KPA) / 1000; }
+
+function syncSeg(id, attr, val){
+  var c = $(id);
+  if(!c) return;
+  c.querySelectorAll('button[data-' + attr + ']').forEach(function(b){
+    var on = b.getAttribute('data-' + attr) === val;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+function syncSenChip(){
+  var chip = $('senEnvChip');
+  if(!chip) return;
+  if(!envHasTemp()){ chip.hidden = true; return; }
+  chip.hidden = false;
+  chip.textContent = '取环境 ' + fmtT(state.env.temp) + '℃';
+}
+
+function sensorErrText(sn, res){
+  var b = sensorBounds(sn);
+  if(res.err === 'v'){
+    return '该电压不在 ' + b.vmin.toFixed(3) + ' ~ ' + b.vmax.toFixed(3) + ' V 内。先确认万用表档位与地线，再查 5V 供电、插头和信号线是否断路或短路。';
+  }
+  if(res.err === 'p'){
+    return '该表压超出' + sn.label + '覆盖范围（绝对 ' + b.pmin + ' ~ ' + b.pmax + ' kPa，表压 ' +
+      senGauge(b.pmin).toFixed(3) + ' ~ ' + senGauge(b.pmax).toFixed(3) + ' MPa）。' +
+      (sn.key === 'low' ? '低压表止于 40℃、2.338 MPa，更高压力请改用高压传感器表。' : '高压表下限对应真空 0.075 MPa，更低压力请改用低压传感器表。');
+  }
+  return '该温度超出制表范围（' + b.tmin + ' ~ ' + b.tmax + '℃），表外不做外推。';
+}
+
+function renderSenResult(){
+  var sn = curSensor(), b = sensorBounds(sn), mode = state.sensor.mode;
+  var box = $('senResult');
+  var raw = num(state.sensor.value);
+  var res = raw === null ? null : sensorCalc(sn, mode, raw);
+  state.senRes = res && res.ok ? res : null;
+
+  if(raw === null){
+    box.innerHTML = '<div class="empty"><div class="empty-ring">V</div><p>输入电压、表压或温度</p>' +
+      '<small>' + sn.label + ' · ' + b.vmin.toFixed(3) + ' ~ ' + b.vmax.toFixed(3) + ' V</small></div>';
+    return;
+  }
+  if(!res.ok){
+    var html = '<div class="verdict warn"><div class="vt">超出' + sn.label + '量程</div><p>' + sensorErrText(sn, res) + '</p></div>';
+    var other = null;
+    if(res.err === 'p'){
+      if(sn.key === 'low' && raw > senGauge(b.pmax)) other = 'high';
+      if(sn.key === 'high' && raw < senGauge(b.pmin)) other = 'low';
+    }
+    if(other) html += '<button class="sen-switch" type="button" data-sen-act="' + other + '">改用' + SENSORS[other].label + '</button>';
+    box.innerHTML = html;
+    return;
+  }
+
+  var g = senGauge(res.abs);
+  var vpos = clamp((res.v - b.vmin) / (b.vmax - b.vmin) * 100, 0, 100);
+  var heroKicker, heroVal, heroUnit;
+  if(mode === 'v'){ heroKicker = '该电压对应表压'; heroVal = g.toFixed(3); heroUnit = 'MPa'; }
+  else { heroKicker = (mode === 'p' ? '该压力应有输出' : '该温度应有输出'); heroVal = res.v.toFixed(3); heroUnit = 'V'; }
+
+  var vt = 'info', vTitle = '换算结果', vText = '';
+  if(mode === 'v'){
+    if(res.v <= b.vmin + 0.02){
+      vt = 'warn'; vTitle = '贴近量程下限';
+      vText = '对应 ' + res.t.toFixed(1) + '℃（绝对 ' + Math.round(res.abs) + ' kPa）。若系统并非抽真空状态，先查信号线是否对地短路、5V 供电是否缺失。';
+    } else if(res.v >= b.vmax - 0.05){
+      vt = 'warn'; vTitle = '贴近量程上限';
+      vText = '对应 ' + res.t.toFixed(1) + '℃（绝对 ' + Math.round(res.abs) + ' kPa）。先核对系统压力，排除信号线短接到 5V。';
+    } else {
+      vTitle = '电压在量程内';
+      vText = '绝对压力 ' + Math.round(res.abs) + ' kPa，表压 ' + g.toFixed(3) + ' MPa，饱和温度 ' + res.t.toFixed(1) + '℃。与压力表读数相差超过 0.1 MPa 时，先查插头与线束再换件。';
+    }
+  } else if(mode === 'p'){
+    vTitle = '按压力核对输出';
+    vText = '表压 ' + g.toFixed(3) + ' MPa（绝对 ' + Math.round(res.abs) + ' kPa），' + sn.label + '应输出 ' + res.v.toFixed(3) + ' V。实测偏离超过 ±0.10 V 时，重点查线束与传感器（经验阈值）。';
+  } else {
+    vTitle = '按温度核对输出';
+    vText = res.t.toFixed(1) + '℃ 时 R410A 饱和绝对压力 ' + Math.round(res.abs) + ' kPa（表压 ' + g.toFixed(3) + ' MPa），' + sn.label + '应输出 ' + res.v.toFixed(3) + ' V。';
+  }
+
+  box.innerHTML = '<div class="hero" style="padding-top:2px">' +
+    '<span class="hero-kicker">' + heroKicker + '</span>' +
+    '<div class="hero-num">' + heroVal + '<span class="u">' + heroUnit + '</span></div>' +
+    '<div class="badge info"><span class="dot"></span>R410A · ' + sn.side + ' · ' + res.t.toFixed(1) + '℃</div></div>' +
+    '<div class="stats four" style="margin-top:14px">' +
+      '<div><span>绝对压力</span><b>' + Math.round(res.abs) + '<i>kPa</i></b></div>' +
+      '<div><span>表压</span><b>' + g.toFixed(3) + '<i>MPa</i></b></div>' +
+      '<div><span>饱和温度</span><b>' + res.t.toFixed(1) + '<i>℃</i></b></div>' +
+      '<div><span>输出电压</span><b>' + res.v.toFixed(3) + '<i>V</i></b></div>' +
+    '</div>' +
+    '<div class="rangebar sen-bar"><span class="mark" style="left:' + vpos.toFixed(1) + '%"></span>' +
+      '<span class="cap l">' + b.vmin.toFixed(2) + 'V</span><span class="cap r">' + b.vmax.toFixed(2) + 'V</span></div>' +
+    '<div class="verdict ' + vt + '"><div class="vt">' + vTitle + '</div><p>' + vText + '</p></div>';
+}
+
+function buildSenTable(){
+  var sn = curSensor();
+  if(state.senTableType === sn.key) return;
+  var rows = '';
+  sn.data.forEach(function(r){
+    rows += '<tr data-t="' + r[0] + '"><td>' + r[0] + '</td><td class="num">' + r[1] + '</td><td class="num">' +
+      senGauge(r[1]).toFixed(3) + '</td><td class="num">' + r[2].toFixed(3) + '</td></tr>';
+  });
+  $('senTableBody').innerHTML = rows;
+  $('senTableCount').textContent = sn.data.length + ' 行';
+  state.senTableType = sn.key;
+}
+
+function highlightSenTable(res){
+  var body = $('senTableBody');
+  var prev = body.querySelector('tr.on');
+  if(prev) prev.classList.remove('on');
+  if(!res) return;
+  var row = body.querySelector('tr[data-t="' + Math.round(res.t) + '"]');
+  if(!row) return;
+  row.classList.add('on');
+  if(!$('senTableCard').open) return;
+  var wrap = body.parentNode.parentNode;
+  var rt = row.getBoundingClientRect(), wt = wrap.getBoundingClientRect();
+  if(rt.top < wt.top + 26 || rt.bottom > wt.bottom - 6){
+    wrap.scrollTop += rt.top - wt.top - 62;
+  }
+}
+
+function buildSenChart(res){
+  var xmin = 0, xmax = 5.2, ymin = 0, ymax = 5;
+  var s = '';
+  var yv;
+  for(yv = 0; yv <= ymax; yv += 1){
+    var y = yLin(yv, ymin, ymax);
+    s += '<line class="grid" x1="' + CL + '" y1="' + y.toFixed(1) + '" x2="' + (CW-CR) + '" y2="' + y.toFixed(1) + '"/>';
+    s += '<text x="' + (CL-6) + '" y="' + (y+3).toFixed(1) + '" text-anchor="end">' + yv + '</text>';
+  }
+  for(yv = 0; yv <= 5; yv += 1){
+    var x = xPos(yv, xmin, xmax);
+    s += '<line class="grid" x1="' + x.toFixed(1) + '" y1="' + CT + '" x2="' + x.toFixed(1) + '" y2="' + (CH-CB) + '"/>';
+    s += '<text x="' + x.toFixed(1) + '" y="' + (CH-9) + '" text-anchor="middle">' + yv + '</text>';
+  }
+  s += '<line class="axis" x1="' + CL + '" y1="' + (CH-CB) + '" x2="' + (CW-CR) + '" y2="' + (CH-CB) + '"/>';
+  s += '<line class="axis" x1="' + CL + '" y1="' + CT + '" x2="' + CL + '" y2="' + (CH-CB) + '"/>';
+  s += '<text x="' + (CW-CR) + '" y="' + (CH-9) + '" text-anchor="end" style="font-size:8px">V</text>';
+  s += '<text x="' + (CL-6) + '" y="' + (CT-3) + '" text-anchor="end" style="font-size:8px">MPa</text>';
+
+  ['low','high'].forEach(function(k){
+    var sn = SENSORS[k], pts = '';
+    sn.data.forEach(function(r){
+      pts += (pts ? 'L' : 'M') + xPos(r[2], xmin, xmax).toFixed(1) + ' ' + yLin(r[1]/1000, ymin, ymax).toFixed(1);
+    });
+    var active = k === state.sensor.type;
+    s += '<path class="series" d="' + pts + '" stroke="' + sn.color + '" stroke-width="' + (active ? 2.2 : 1.4) + '" opacity="' + (active ? 1 : 0.4) + '"/>';
+  });
+
+  if(res && res.ok){
+    s += '<circle class="marker" cx="' + xPos(res.v, xmin, xmax).toFixed(1) + '" cy="' + yLin(res.abs/1000, ymin, ymax).toFixed(1) + '" r="4.2" fill="' + curSensor().color + '"/>';
+  }
+
+  s += '<g id="senHairG" style="display:none">' +
+    '<line id="senHair" stroke="rgba(200,225,245,.3)" stroke-width="1" stroke-dasharray="3 3"/>' +
+    '<circle id="senDotH" r="3" stroke="#061019" stroke-width="1.2" fill="' + SENSORS.high.color + '" style="display:none"/>' +
+    '<circle id="senDotL" r="3" stroke="#061019" stroke-width="1.2" fill="' + SENSORS.low.color + '" style="display:none"/>' +
+    '</g>';
+
+  $('senChart').innerHTML = s;
+  $('senLegend').innerHTML = '<span><i style="background:' + SENSORS.high.color + '"></i>高压传感器</span>' +
+    '<span><i style="background:' + SENSORS.low.color + '"></i>低压传感器</span>';
+  state.senGeom = {xmin:xmin, xmax:xmax, ymin:ymin, ymax:ymax};
+}
+
+function onSenMove(ev){
+  var g = state.senGeom;
+  if(!g) return;
+  var svg = $('senChart');
+  var rect = svg.getBoundingClientRect();
+  if(!rect.width) return;
+  var vx = (ev.clientX - rect.left) / rect.width * CW;
+  var v = clamp(g.xmin + (vx - CL) / (CW - CL - CR) * (g.xmax - g.xmin), g.xmin, g.xmax);
+  var x = xPos(v, g.xmin, g.xmax);
+
+  var hair = $('senHair');
+  if(!hair) return;
+  var keep = $('senHairG');
+  keep.style.display = '';
+  hair.setAttribute('x1', x); hair.setAttribute('x2', x);
+  hair.setAttribute('y1', CT); hair.setAttribute('y2', CH - CB);
+
+  var html = '<div class="tt">' + v.toFixed(2) + ' V</div>';
+  ['high','low'].forEach(function(k){
+    var sn = SENSORS[k];
+    var dot = $(k === 'high' ? 'senDotH' : 'senDotL');
+    var t = sensorTempFromV(sn, v);
+    if(t === null){ if(dot) dot.style.display = 'none'; return; }
+    var r = sensorAtTemp(sn, t);
+    var y = yLin(r.abs/1000, g.ymin, g.ymax);
+    if(dot){
+      dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+      dot.style.display = '';
+    }
+    html += '<div class="row"><i style="background:' + sn.color + '"></i>' + (k === 'high' ? '高压' : '低压') +
+      '<b>' + (r.abs/1000).toFixed(2) + ' MPa</b></div>';
+  });
+  var tip = $('senTip');
+  tip.innerHTML = html;
+  tip.hidden = false;
+  tip.style.left = clamp(x / CW * 100, 18, 82) + '%';
+}
+function onSenLeave(){
+  var g = $('senHairG');
+  if(g) g.style.display = 'none';
+  var tip = $('senTip');
+  if(tip) tip.hidden = true;
+}
+
+function renderSenCheck(){
+  var sn = curSensor();
+  var out = $('senCheckOut');
+  if(!out) return;
+  var p = num(state.sensor.checkP), v = num(state.sensor.checkV);
+  if(p === null || v === null){
+    out.innerHTML = '输入同一时刻的表压与信号电压，自动算出应有输出与偏差。';
+    return;
+  }
+  var exp = sensorCalc(sn, 'p', p);
+  if(!exp.ok){
+    out.innerHTML = '<b>该表压超出' + sn.label + '量程</b>，请核对压力表单位，或改用另一种传感器。';
+    return;
+  }
+  var dv = v - exp.v;
+  var b = sensorBounds(sn);
+  var pct = Math.abs(dv) / (b.vmax - b.vmin) * 100;
+  var judge = Math.abs(dv) <= 0.1 ? '与标准输出一致' : (Math.abs(dv) <= 0.25 ? '偏差偏大' : '偏差异常');
+  out.innerHTML = '按表压 <b>' + p.toFixed(3) + ' MPa</b>，' + sn.label + '应输出 <b>' + exp.v.toFixed(3) + ' V</b>；实测 <b>' +
+    v.toFixed(3) + ' V</b>，偏差 <b>' + (dv >= 0 ? '+' : '') + dv.toFixed(3) + ' V</b>（占量程 ' + pct.toFixed(1) + '%）→ <b>' + judge + '</b>。';
+}
+
+function renderSensor(){
+  var sn = curSensor(), b = sensorBounds(sn), mode = state.sensor.mode, md = SEN_MODE[mode];
+  $('senRange').textContent = b.tmin + ' ~ ' + b.tmax + '℃';
+  $('senMeta').textContent = '绝对 ' + b.pmin + ' ~ ' + b.pmax + ' kPa · 输出 ' + b.vmin.toFixed(3) + ' ~ ' + b.vmax.toFixed(3) + ' V';
+  syncSeg('senSeg', 'sen', state.sensor.type);
+  syncSeg('senModeSeg', 'smode', mode);
+  $('senInputLabel').textContent = md.label;
+  $('senInputOpt').textContent = md.opt;
+  $('senUnit').textContent = md.unit;
+  $('senInput').placeholder = md.ph;
+  $('senHint').textContent = mode === 'v'
+    ? '量程 ' + b.vmin.toFixed(3) + ' ~ ' + b.vmax.toFixed(3) + ' V · 5V 供电'
+    : (mode === 'p'
+      ? '可查表压 ' + senGauge(b.pmin).toFixed(3) + ' ~ ' + senGauge(b.pmax).toFixed(3) + ' MPa'
+      : '饱和温度 ' + b.tmin + ' ~ ' + b.tmax + '℃ · 1℃ 步进');
+  if($('senInput').value !== state.sensor.value) $('senInput').value = state.sensor.value;
+
+  renderSenResult();
+  buildSenChart(state.senRes);
+  buildSenTable();
+  highlightSenTable(state.senRes);
+  renderSenCheck();
+  syncSenChip();
+}
+
+function useEnvForSensor(){
+  if(!envHasTemp()) return;
+  state.sensor.mode = 't';
+  state.sensor.value = state.env.temp.toFixed(1);
+  renderSensor();
+}
+
+function openSensorAtPressure(mpa){
+  state.sensor.mode = 'p';
+  state.sensor.value = isFinite(mpa) ? mpa.toFixed(3) : '';
+  switchTab('sensor');
+  var card = $('senInput').closest('.card');
+  if(card){
+    card.classList.remove('flash');
+    void card.offsetWidth;
+    card.classList.add('flash');
+    setTimeout(function(){ card.classList.remove('flash'); }, 1400);
+  }
+}
+
+function useEnvSensorLink(){
+  if(!envHasTemp()){ envOpenManual(true); return; }
+  var r = refAtTemp(REFS.r410a, clamp(state.env.temp, -50, 71.8));
+  if(!r){ envOpenManual(true); return; }
+  openSensorAtPressure(((r.gauge + 1) * 100 - ATM_KPA) / 1000);
+}
+
+/* ---------------- tabs / bindings ---------------- */
+function switchTab(tab){
+  state.tab = tab;
+  document.querySelectorAll('.tab').forEach(function(b){
+    var on = b.getAttribute('data-tab') === tab;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.view').forEach(function(v){
+    v.classList.toggle('active', v.id === 'view-' + tab);
+  });
+  var main = document.querySelector('main');
+  if(main) main.scrollTop = 0;
+
+  if(tab === 'curve'){ buildCurve(); renderKeyTable(); }
+  if(tab === 'env'){ renderEnv(); renderEnvParams(); envMaybeRefresh(); }
+  if(tab === 'ref'){ buildRefChart(); }
+  if(tab === 'sensor'){ renderSensor(); }
+  if(tab === 'rec'){ renderRecords(); }
+}
+
+function bindSeg(container, attr, handler){
+  container.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-' + attr + ']');
+    if(!btn) return;
+    container.querySelectorAll('button').forEach(function(b){
+      var on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    handler(btn.getAttribute('data-' + attr));
+  });
+}
+
+function init(){
+  // tabs
+  document.querySelector('.tabs').addEventListener('click', function(e){
+    var b = e.target.closest('.tab');
+    if(b) switchTab(b.getAttribute('data-tab'));
+  });
+
+  // spec
+  bindSeg($('specSeg'), 'spec', function(v){
+    state.spec = v;
+    renderDiag();
+    if(state.tab === 'curve'){ buildCurve(); renderKeyTable(); }
+  });
+
+  // mode
+  bindSeg($('modeSeg'), 'mode', function(v){
+    state.mode = v;
+    state.value = '';
+    $('mainInput').value = '';
+    renderUnitAndPlaceholder();
+    renderDiag();
+  });
+
+  // inputs
+  $('mainInput').addEventListener('input', function(){
+    var s = this.value.replace(/[^0-9.\-]/g, '');
+    var neg = s.charAt(0) === '-';
+    s = s.replace(/-/g, '');
+    var parts = s.split('.');
+    s = parts.shift() + (parts.length ? '.' + parts.join('') : '');
+    s = (neg ? '-' : '') + s;
+    if(s !== this.value) this.value = s;
+    state.value = s;
+    renderResult();
+    renderCross();
+  });
+
+  $('signBtn').addEventListener('click', function(){
+    var el = $('mainInput');
+    var v = el.value.trim();
+    if(v.charAt(0) === '-'){ v = v.slice(1); }
+    else { v = '-' + v; }
+    el.value = v;
+    state.value = v;
+    renderResult();
+    renderCross();
+    el.focus({preventScroll:true});
+  });
+  $('refInput').addEventListener('input', function(){
+    state.refTemp = this.value;
+    renderResult();
+  });
+
+  // result actions (delegated)
+  $('resultCard').addEventListener('click', function(e){
+    var t = e.target.closest('button');
+    if(!t) return;
+    if(t.id === 'saveBtn') addRecord();
+    if(t.id === 'resetBtn'){
+      state.value = '';
+      $('mainInput').value = '';
+      renderResult();
+      renderCross();
+    }
+  });
+
+  // curve
+  bindSeg($('curveSpecSeg'), 'cspec', function(v){
+    state.curveSpec = v;
+    buildCurve();
+    renderKeyTable();
+  });
+  bindSeg($('metricSeg'), 'metric', function(v){
+    state.curveMetric = v;
+    buildCurve();
+  });
+  var cc = $('curveChart');
+  cc.addEventListener('pointerdown', function(e){ onCurveMove(e); });
+  cc.addEventListener('pointermove', function(e){ if(e.pointerType === 'mouse' || e.buttons) onCurveMove(e); });
+  cc.addEventListener('pointerleave', onCurveLeave);
+  cc.addEventListener('pointerup', function(e){ if(e.pointerType !== 'mouse') onCurveLeave(); });
+
+  // refrigerant
+  bindSeg($('refSeg'), 'ref', function(v){
+    state.ref = v;
+    state.refMarker = null;
+    renderRef();
+    renderSuperheat();
+  });
+  bindSeg($('refModeSeg'), 'rmode', function(v){
+    state.refMode = v;
+    state.refValue = '';
+    $('refInputMain').value = '';
+    state.refMarker = null;
+    renderRef();
+  });
+  $('refInputMain').addEventListener('input', function(){
+    state.refValue = this.value;
+    renderRef();
+  });
+  var rc = $('refChart');
+  rc.addEventListener('pointerdown', function(e){ onRefMove(e); });
+  rc.addEventListener('pointermove', function(e){ if(e.pointerType === 'mouse' || e.buttons) onRefMove(e); });
+  rc.addEventListener('pointerleave', onRefLeave);
+  rc.addEventListener('pointerup', function(e){ if(e.pointerType !== 'mouse') onRefLeave(); });
+
+  $('shP').addEventListener('input', renderSuperheat);
+  $('shT').addEventListener('input', renderSuperheat);
+
+  // records
+  $('recList').addEventListener('click', function(e){
+    var b = e.target.closest('.rec-del');
+    if(b) delRecord(b.getAttribute('data-id'));
+  });
+  var clearBtn = $('clearBtn');
+  var armed = false;
+  clearBtn.addEventListener('click', function(){
+    if(!armed){
+      armed = true;
+      clearBtn.textContent = '再点一次，确认清空';
+      setTimeout(function(){ armed = false; clearBtn.textContent = '清空全部记录'; }, 2600);
+      return;
+    }
+    state.records = [];
+    persistRecords();
+    renderRecords();
+    armed = false;
+    clearBtn.textContent = '清空全部记录';
+  });
+
+  // sheet
+  var sheet = $('sheet');
+  function openSheet(){
+    sheet.hidden = false;
+    var sc = sheet.querySelector('.sheet');
+    if(sc) sc.scrollTop = 0;
+    $('sheetTitle').focus({preventScroll:true});
+  }
+  function closeSheet(){ sheet.hidden = true; $('infoBtn').focus(); }
+  $('infoBtn').addEventListener('click', openSheet);
+  $('sheetClose').addEventListener('click', closeSheet);
+  sheet.addEventListener('click', function(e){ if(e.target === sheet) closeSheet(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !sheet.hidden) closeSheet();
+  });
+
+  // environment
+  $('envHero').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-env-act]');
+    if(!b) return;
+    var act = b.getAttribute('data-env-act');
+    if(act === 'locate') envLocate();
+    else if(act === 'refresh') envRefresh();
+    else if(act === 'manual') envOpenManual(true);
+  });
+  $('envManualClose').addEventListener('click', envCloseManual);
+  $('cityBtn').addEventListener('click', envSearchCity);
+  $('cityInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); envSearchCity(); }
+  });
+  $('envTempBtn').addEventListener('click', envUseManualTemp);
+  $('envTempInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); envUseManualTemp(); }
+  });
+  $('envUseRef').addEventListener('click', useEnvAsRef);
+  $('useEnvRef').addEventListener('click', useEnvAsRef);
+  $('envRefBody').addEventListener('click', function(e){
+    var tr = e.target.closest('tr[data-env-ref]');
+    if(tr) useEnvAsRefrigerant(tr.getAttribute('data-env-ref'));
+  });
+
+  // pressure sensor
+  bindSeg($('senSeg'), 'sen', function(v){
+    state.sensor.type = v;
+    renderSensor();
+  });
+  bindSeg($('senModeSeg'), 'smode', function(v){
+    var oldMode = state.sensor.mode, sn = curSensor(), raw = num(state.sensor.value);
+    var res = raw === null ? null : sensorCalc(sn, oldMode, raw);
+    state.sensor.mode = v;
+    if(res && res.ok){
+      state.sensor.value = v === 'v' ? res.v.toFixed(3) : (v === 'p' ? senGauge(res.abs).toFixed(3) : res.t.toFixed(1));
+    }
+    renderSensor();
+  });
+  $('senInput').addEventListener('input', function(){
+    state.sensor.value = this.value;
+    renderSensor();
+  });
+  $('senCheckP').addEventListener('input', function(){
+    state.sensor.checkP = this.value;
+    renderSenCheck();
+  });
+  $('senCheckV').addEventListener('input', function(){
+    state.sensor.checkV = this.value;
+    renderSenCheck();
+  });
+  $('senResult').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-sen-act]');
+    if(!b) return;
+    state.sensor.type = b.getAttribute('data-sen-act');
+    renderSensor();
+  });
+  $('senEnvChip').addEventListener('click', useEnvForSensor);
+  $('envSensorBtn').addEventListener('click', useEnvSensorLink);
+  $('refResult').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-sen-jump]');
+    if(!b) return;
+    var g = num(b.getAttribute('data-sen-jump'));
+    if(g !== null) openSensorAtPressure(((g + 1) * 100 - ATM_KPA) / 1000);
+  });
+  var senChart = $('senChart');
+  senChart.addEventListener('pointerdown', function(e){ onSenMove(e); });
+  senChart.addEventListener('pointermove', function(e){ if(e.pointerType === 'mouse' || e.buttons) onSenMove(e); });
+  senChart.addEventListener('pointerleave', onSenLeave);
+  senChart.addEventListener('pointerup', function(e){ if(e.pointerType !== 'mouse') onSenLeave(); });
+  $('senTableCard').addEventListener('toggle', function(){ if(this.open) highlightSenTable(state.senRes); });
+
+  // init data
+  state.records = loadRecords();
+  renderUnitAndPlaceholder();
+  renderDiag();
+  renderRecords();
+  buildCurve();
+  renderKeyTable();
+  renderRef();
+  renderSuperheat();
+  renderSensor();
+  initEnv();
+
+  window.addEventListener('resize', function(){
+    if(state.tab === 'curve') buildCurve();
+    if(state.tab === 'ref') buildRefChart();
+    if(state.tab === 'sensor') buildSenChart(state.senRes);
+  });
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+})();
+</script>
+</body>
+</html>
