@@ -18,10 +18,10 @@
 请到本仓库的 **Releases** 页面下载最新 APK：
 
 - 最新版页面：https://github.com/596311341/gree-small-tools/releases/latest
-- 直接下载：https://github.com/596311341/gree-small-tools/releases/latest/download/gree-small-tools-v1.1.1.apk
+- 直接下载：https://github.com/596311341/gree-small-tools/releases/latest/download/gree-small-tools-v1.1.2.apk
 
 - 应用名：格力小工具
-- 版本：1.1.1
+- 版本：1.1.2
 - 支持 Android 7.0（API 24）及以上
 - 包名：`com.hvac.eyecare`
 
